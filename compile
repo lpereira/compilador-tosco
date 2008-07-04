@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo AST && gcc -Wall -g -o ast ast.c lex.c stack.c symbol-table.c -DTEST_AST -I/sw/include/glib-2.0 -I/sw/lib/glib-2.0/include -L/sw/lib -lglib-2.0 -lintl -liconv
+echo LEX && gcc -Wall -g -o lex lex.c  -DLEX_TEST -I/sw/include/glib-2.0 -I/sw/lib/glib-2.0/include -L/sw/lib -lglib-2.0 -lintl -liconv
+echo CG  && gcc -Wall -g -o codegen codegen.c ast.c lex.c stack.c symbol-table.c -DCODEGEN_TEST -I/sw/include/glib-2.0 -I/sw/lib/glib-2.0/include -L/sw/lib -lglib-2.0 -lintl -liconv
