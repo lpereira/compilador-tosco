@@ -36,21 +36,18 @@ guint
 codegen(GNode *node)
 {
 	guint r, t1, t2;
-	gchar *op;
-	
 	ASTNode  *ast_node = (ASTNode *) node->data;
 	
 	switch (ast_node->token) {
 		case T_MINUS:
-			op = "-";
 		case T_PLUS:
-			op = "+";
-		
+		case T_DIVIDE:
+		case T_MULTIPLY:
 			t1 = codegen(node->children);
 			t2 = codegen(node->children->next);
 			
 			r = temp_new();
-			g_print("t%d := t%d %s t%d\n", r, t1, op, t2);
+			g_print("t%d := t%d %s t%d\n", r, t1, literals[ast_node->token], t2);
 			temp_reset();
 		
 			break;
@@ -71,7 +68,7 @@ codegen(GNode *node)
 			break;
 		
 		case T_VAR:
-			
+			g_print("/* alloc space for variables */\n");
 			break;
 		
 		case T_IDENTIFIER:
@@ -80,7 +77,15 @@ codegen(GNode *node)
 			temp_reset();
 			
 			break;
+
+		case T_READ:
+			g_print("read_integer %s\n", (gchar *)ast_node->data);
+			break;
 		
+		case T_WRITE:
+			g_print("print_integer %s\n", (gchar *)ast_node->data);
+			break;
+
 		case T_PROGRAM:
 			{
 				GNode *n;
