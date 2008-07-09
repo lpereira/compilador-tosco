@@ -22,6 +22,9 @@ typedef struct	_SymbolTable	SymbolTable;
 struct _STEntry {
 	STEntryType	type;
 	STEntryKind	kind;
+
+	guint		label_number;
+	guint		size, offset;
 };
 
 struct _SymbolTable {
@@ -44,5 +47,11 @@ STEntryKind  symbol_table_get_entry_kind(SymbolTable *st, gchar *symbol_name);
 
 STEntryType	 symbol_table_get_entry_type_n(SymbolTable *st, gchar *symbol_name, gint n);
 STEntryKind  symbol_table_get_entry_kind_n(SymbolTable *st, gchar *symbol_name, gint n);
+
+void		 symbol_table_set_label_number(SymbolTable *st, gchar *symbol_name, guint label_number);
+guint		 symbol_table_get_label_number(SymbolTable *st, gchar *symbol_name);
+
+void		 symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size, guint offset);
+gboolean	 symbol_table_get_size_and_offset(SymbolTable *st, gchar *symbol_name, guint *size, guint *offset);
 
 #endif	/* __SYMBOL_TABLE_H__ */

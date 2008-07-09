@@ -6,17 +6,20 @@
  */
 /*
  * BUGS / ISSUES / TODO / FIXME / WTFBBQ
- *  - the code crashes sometimes; symbol table issues?
- *  - function and procedure calling code generation is wrong
+ *  - the code crashes sometimes; symbol table issues? (SEEMS FIXED?)
+ *  - function and procedure calling code generation is wrong (SEEMS FIXED?)
  *  - must add a jump to the "main program" right after global variable
  *    declaration
  *  - we're printing out the code; this isn't a good idea to generate
  *    the final code later -- include the generated code in a list,
  *    and use sane structures
  *  - temp_new/temp_reset. is this sane?
- *  - unary operations are not supported
+ *  - unary operations are not supported (support must come right from the lex)
  *  - neither are T_TRUE and T_FALSE values
+ *  - when a function returns, the allocated variables must be freed
+ *    before "return"
  */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,8 +84,9 @@ generate_children(GNode *nodes)
 static guint
 generate_var(GNode *types)
 {
-	GNode *type;
+	GNode *type, *var;
 	gint size, total_size = 0;
+	STEntryKind kind;
 	
 	for (type = types->children; type; type = type->next) {
 		ASTNode *ast_node = (ASTNode *)type->data;
@@ -90,17 +94,25 @@ generate_var(GNode *types)
 		switch (ast_node->token) {
 			case T_BOOLEAN:
 				size = 1;
+				kind = SK_BOOLEAN;
 				break;
 			case T_INTEGER:
 			default:		/* assume size 4 */
 				size = 4;
+				kind = SK_INTEGER;
 		}
-		
-		size *= g_node_n_children(type);
-		total_size += size;
-		
-		printf("alloc %d\n", size);
+
+		for (var = type->children; var; var = var->next) {
+			ast_node = (ASTNode *)var->data;
+
+			symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_VARIABLE, kind);
+			symbol_table_set_size_and_offset(symbol_table, (gchar *)ast_node->data, size, total_size);
+
+			total_size += size;
+		}
 	}
+
+	printf("alloc %d\n", total_size);
 	
 	return total_size;
 }
@@ -166,8 +178,9 @@ generate_while(GNode *nodes)
 }
 
 static guint
-generate_binop(GNode *node, gchar *op)
+generate_binop(GNode *node)
 {
+	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r, t1, t2;
 	
 	r = temp_new();
@@ -175,7 +188,7 @@ generate_binop(GNode *node, gchar *op)
 	t1 = generate(node->children);
 	t2 = generate(node->children->next);
 	
-	printf("t%d := t%d %s t%d\n", r, t1, op, t2);
+	printf("t%d := t%d %s t%d\n", r, t1, literals[ast_node->token], t2);
 
 	temp_reset();
 	temp_reset();
@@ -184,52 +197,60 @@ generate_binop(GNode *node, gchar *op)
 }
 
 static guint
-generate_number(gchar *n)
+generate_number(GNode *node)
 {
+	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r;
 	
 	r = temp_new();
-	printf("t%d := %s\n", r, n);
+	printf("t%d := %s\n", r, (gchar *)ast_node->data);
 	
 	return r;
 }
 
 static guint
-generate_attrib(GNode *children, gchar *var_name)
+generate_attrib(GNode *node)
 {
+	ASTNode *ast_node = (ASTNode *)node->data;
+	GNode *children = node->children;
 	guint r;
 	
 	r = generate(children);
-	printf("store %s, t%d\n", var_name, r);			
+	printf("store %s, t%d\n", (gchar *)ast_node->data, r);
 	temp_reset();
 	
 	return r;	
 }
 
 static guint
-generate_identifier(gchar *var_name)
+generate_identifier(GNode *node)
 {
+	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r;
 	
 	r = temp_new();
-	printf("load t%d, %s\n", r, var_name);
+	printf("load t%d, %s\n", r, (gchar *)ast_node->data);
 	
 	return r;
 }
 
 static guint
-generate_read(gchar *var_name)
+generate_read(GNode *node)
 {
-	printf("read %s\n", var_name);	
-	
+	ASTNode *ast_node = (ASTNode *)node->data;
+
+	printf("read %s\n", (gchar*) ast_node->data);
+
 	return 0;
 }
 
 static guint
-generate_write(gchar *var_name)
+generate_write(GNode *node)
 {
-	printf("write %s\n", var_name);
-	
+	ASTNode *ast_node = (ASTNode *)node->data;
+
+	printf("write %s\n", (gchar *) ast_node->data);
+
 	return 0;
 }
 
@@ -248,12 +269,13 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	
 	if (procedure) {
 		printf("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
-		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
+		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, SK_NONE);
 	} else {
 		printf("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
-		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_FUNCTION, r);
+		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_FUNCTION, SK_NONE);
 	}
-	
+
+	symbol_table_set_label_number(symbol_table, (gchar *)ast_node->data, r);
 	symbol_table_push_context(symbol_table);
 	
 	for (n = node->children; n; n = n->next) {
@@ -312,7 +334,7 @@ generate_procedure_call(GNode *node)
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint label;
 	
-	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
+	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 	
 	context_save();
 	printf("call label%d\n", label);
@@ -333,7 +355,7 @@ generate_function_call(GNode *node)
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r, label;
 	
-	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
+	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 	
 	r = temp_new();
 	context_save();
@@ -361,8 +383,8 @@ generate_function_return(GNode *node)
 static guint
 generate(GNode *node)
 {
-	guint r = 0;
 	ASTNode *ast_node = (ASTNode *) node->data;
+	guint r = 0;
 		
 	switch (ast_node->token) {
 		case T_MINUS:
@@ -375,67 +397,52 @@ generate(GNode *node)
 		case T_OP_LT:
 		case T_OP_LEQ:
 		case T_OP_DIFFERENT:
-			r = generate_binop(node, (gchar *)literals[ast_node->token]);
+			r = generate_binop(node);
 			break;
-		
 		case T_NUMBER:
-			r = generate_number((gchar *)ast_node->data);			
+			r = generate_number(node);
 			break;
-		
 		case T_ATTRIB:
-			r = generate_attrib(node->children, (gchar *)ast_node->data);
+			r = generate_attrib(node);
 			break;
-		
 		case T_VAR:
 			r = generate_var(node);
 			break;
-		
 		case T_IDENTIFIER:
-			r = generate_identifier((gchar *)ast_node->data);
+			r = generate_identifier(node);
 			break;
-
 		case T_READ:
-			r = generate_read((gchar *)ast_node->data);
+			r = generate_read(node);
 			break;
-		
 		case T_WRITE:
-			r = generate_write((gchar *)ast_node->data);
+			r = generate_write(node);
 			break;
-		
 		case T_WHILE:
 			r = generate_while(node);
 			break;
-		
 		case T_IF:
 			r = generate_if(node);
 			break;
-
 		case T_PROGRAM:
 			r = generate_children(node);
 			break;
-		
 		case T_PROCEDURE:
 			r = generate_procedure(node);
 			break;
-			
 		case T_PROCEDURE_CALL:
 			r = generate_procedure_call(node);
 			break;
-		
 		case T_FUNCTION:
 			r = generate_function(node);
 			break;
-		
 		case T_FUNCTION_CALL:
 			r = generate_function_call(node);
 			break;
-		
 		case T_FUNCTION_RETURN:
 			r = generate_function_return(node);
 			break;
-		
 		default:
-			g_error("Panic! Don't know how to generate code for node ``%s''.", literals[ast_node->token]);
+			g_error("Houston, we have a problem! Don't know how to generate code for node type ``%s''.", literals[ast_node->token]);
 	}
 	
 	return r;

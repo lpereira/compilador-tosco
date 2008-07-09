@@ -116,7 +116,7 @@ STEntryType
 symbol_table_get_entry_type(SymbolTable *st, gchar *symbol_name)
 {
 	STEntry *entry;
-	
+
 	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
 		return entry->type;
 	}
@@ -128,7 +128,7 @@ STEntryKind
 symbol_table_get_entry_kind(SymbolTable *st, gchar *symbol_name)
 {
 	STEntry *entry;
-	
+
 	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
 		return entry->kind;
 	}
@@ -140,7 +140,7 @@ STEntryType
 symbol_table_get_entry_type_n(SymbolTable *st, gchar *symbol_name, gint n)
 {
 	STEntry *entry;
-	
+
 	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, n))) {
 		return entry->type;
 	}
@@ -156,6 +156,60 @@ symbol_table_get_entry_kind_n(SymbolTable *st, gchar *symbol_name, gint n)
 	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, n))) {
 		return entry->kind;
 	}
-	
+
 	return SK_NONE;
+}
+
+void
+symbol_table_set_label_number(SymbolTable *st, gchar *symbol_name, guint label_number)
+{
+	STEntry *entry;
+
+	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
+		entry->label_number = label_number;
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+guint
+symbol_table_get_label_number(SymbolTable *st, gchar *symbol_name)
+{
+	STEntry *entry;
+
+	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
+		return entry->label_number;
+	}
+
+	return -1;
+}
+
+void
+symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size, guint offset)
+{
+	STEntry *entry;
+
+	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
+		entry->size = size;
+		entry->offset = offset;
+		return;
+	}
+
+	g_return_if_reached();
+}
+
+gboolean
+symbol_table_get_size_and_offset(SymbolTable *st, gchar *symbol_name, guint *size, guint *offset)
+{
+	STEntry *entry;
+
+	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
+		*size = entry->size;
+		*offset = entry->offset;
+
+		return TRUE;
+	}
+
+	return FALSE;
 }
