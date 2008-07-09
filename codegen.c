@@ -9,11 +9,13 @@
 #include "ast.h"
 #include "codegen.h"
 #include "symbol-table.h"
+#include "stack.h"
 
 /***/
 
 static guint __temp_value = 0, __label_value = 0;
 static SymbolTable *symbol_table;
+static Stack *context;
 
 /***/
 
@@ -211,19 +213,21 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	
 	g_print("goto label%d\n", l);
 	
-	if (procedure)
+	if (procedure) {
 		g_print("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
-	else
+		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
+	} else {
 		g_print("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
+		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_FUNCTION, r);
+	}
 	
-	symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
 	symbol_table_push_context(symbol_table);
 	
 	for (n = node->children; n; n = n->next) {
 		ast_node = (ASTNode *)n->data;
 		
 		if (ast_node->token == T_VAR)
-			var_size = generate_var(n);
+			var_size += generate_var(n);
 		else
 			generate(n);
 	}
@@ -233,6 +237,7 @@ generate_procedure_or_function(GNode *node, guint procedure)
 
 	if (procedure)
 		g_print("return\n\n");
+
 	symbol_table_pop_context(symbol_table);
 	
 	g_print("label%d:\n", l);
@@ -246,6 +251,29 @@ generate_procedure(GNode *node)
 	return generate_procedure_or_function(node, TRUE);
 }
 
+static void
+context_save(void)
+{
+	guint i;
+	
+	stack_push(context, GINT_TO_POINTER(__temp_value));
+	for (i = 1; i <= __temp_value; i++) {
+		g_print("push t%d\n", i);
+	}
+}
+
+static void
+context_restore(void)
+{
+	guint i;
+	
+	i = GPOINTER_TO_INT(stack_pop(context));
+	
+	for (; i >= 1; i--) {
+		g_print("pop t%d\n", i);
+	}
+}
+
 static guint
 generate_procedure_call(GNode *node)
 {
@@ -253,7 +281,10 @@ generate_procedure_call(GNode *node)
 	guint label;
 	
 	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
-	g_print("call_proc label%d\n", label);
+	
+	context_save();
+	g_print("call label%d\n", label);
+	context_restore();
 
 	return 0;
 }
@@ -270,10 +301,14 @@ generate_function_call(GNode *node)
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r, label;
 	
-	r = temp_new();
 	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
 	
-	g_print("t%d := call_fun label%d\n", r, label);
+	context_save();
+	r = temp_new();
+	
+	g_print("call label%d\n", label);
+	g_print("t%d := return_value (FIXME!)\n", r);
+	context_restore();
 	
 	return r;
 }
@@ -379,10 +414,12 @@ codegen(GNode *root)
 	
 	__temp_value = __label_value = 0;
 	symbol_table = symbol_table_new();
+	context = stack_new();
 	
 	r = generate(root);
 	
 	symbol_table_free(symbol_table);
+	stack_free(context);
 	
 	return r;
 }
