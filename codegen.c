@@ -7,38 +7,95 @@
 
 #include "lex.h"
 #include "ast.h"
+#include "codegen.h"
 
-gboolean
-codegen_traverse_func(GNode *node, gpointer data)
+static guint
+new_label(void)
 {
-	if (node->parent) {
-		ASTNode        *ast_node = (ASTNode *) node->data, *ast_parent = (ASTNode *) node->parent->data;
-
-		switch(ast_node->token) {
-			case T_WRITE:
-				printf("WRITE %s\n", (gchar*)ast_node->data);
-				break;
-			case T_READ:
-				printf("READ %s\n", (gchar*)ast_node->data);
-				break;
-			default:
-				break;
-		}
-
-/*		printf("\"%s %s (%p)\" -> \"%s %s (%p)\";\n",
-		       literals[ast_parent->token], (char *) ast_parent->data, node->parent,
-		  literals[ast_node->token], (char *) ast_node->data, node);
-*/
-	}
+	static guint label = 0;
 	
-	return FALSE;
+	return ++label;
+}
+
+static guint __temp_value = 0;
+static guint
+temp_new(void)
+{
+	return ++__temp_value;
+}
+
+static void
+temp_reset(void)
+{
+	//__temp_value--;
 }
 
 
-void
-codegen(GNode *ast)
+
+guint
+codegen(GNode *node)
 {
-	g_node_traverse(ast, G_PRE_ORDER, G_TRAVERSE_ALL, -1, codegen_traverse_func, NULL);
+	guint r, t1, t2;
+	gchar *op;
+	
+	ASTNode  *ast_node = (ASTNode *) node->data;
+	
+	switch (ast_node->token) {
+		case T_MINUS:
+			op = "-";
+		case T_PLUS:
+			op = "+";
+		
+			t1 = codegen(node->children);
+			t2 = codegen(node->children->next);
+			
+			r = temp_new();
+			g_print("t%d := t%d %s t%d\n", r, t1, op, t2);
+			temp_reset();
+		
+			break;
+		
+		case T_NUMBER:
+			r = temp_new();
+			g_print("t%d := %s\n", r, (gchar *)ast_node->data);
+			temp_reset();
+			
+			break;
+		
+		case T_ATTRIB:			
+		 	r = codegen(node->children);
+			
+			g_print("store $%s, t%d\n", (gchar *)ast_node->data, r);
+			
+			temp_reset();
+			break;
+		
+		case T_VAR:
+			
+			break;
+		
+		case T_IDENTIFIER:
+			r = temp_new();
+			g_print("t%d := load %s\n", r, (gchar *)ast_node->data);
+			temp_reset();
+			
+			break;
+		
+		case T_PROGRAM:
+			{
+				GNode *n;
+
+				for (n = node->children; n; n = n->next) {
+					codegen(n);
+				}
+			}
+			break;
+		
+		default:
+			g_print("/* %s %s */\n", literals[ast_node->token], (gchar *)ast_node->data);
+	}
+	
+	return r;
 }
 
 #ifdef CODEGEN_TEST
