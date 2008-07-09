@@ -73,7 +73,7 @@ codegen_if(GNode *nodes)
 	l2 = label_new();
 
 	r = codegen(nodes->children);
-	g_print("if not t%d goto label%d\n", r, l1);
+	g_print("if_not t%d goto label%d\n", r, l1);
 	temp_reset();
 
 	for (n = nodes->children->next; n; n = n->next) {
@@ -89,6 +89,29 @@ codegen_if(GNode *nodes)
 	}
 	
 	g_print("\nlabel%d:\n", l2);
+}
+
+static void
+codegen_while(GNode *nodes)
+{
+	GNode *n;
+	guint r, l1, l2;
+		
+	l1 = label_new();
+	l2 = label_new();
+	
+	g_print("\nlabel%d:\n", l1);
+	r = codegen(nodes->children);
+	g_print("if_not t%d goto label%d\n", r, l2);
+	temp_reset();
+	
+	for (n = nodes->children->next; n; n = n->next) {
+		codegen(n);
+	}
+	
+	g_print("goto label%d\n", l1);
+	g_print("\nlabel%d:\n", l2);
+
 }
 
 guint
@@ -146,6 +169,10 @@ codegen(GNode *node)
 		
 		case T_WRITE:
 			g_print("write_integer %s\n", (gchar *)ast_node->data);
+			break;
+		
+		case T_WHILE:
+			codegen_while(node);
 			break;
 		
 		case T_IF:
