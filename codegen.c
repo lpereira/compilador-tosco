@@ -8,17 +8,25 @@
 #include "lex.h"
 #include "ast.h"
 #include "codegen.h"
+#include "symbol-table.h"
 
+/***/
+
+static guint __temp_value = 0, __label_value = 0;
+static SymbolTable *symbol_table;
+
+/***/
+
+static guint generate(GNode *node);
 	
+/***/
+
 static guint
 label_new(void)
 {
-	static guint label = 0;
-	
-	return ++label;
+	return ++__label_value;
 }
 
-static guint __temp_value = 0;
 static guint
 temp_new(void)
 {
@@ -32,22 +40,22 @@ temp_reset(void)
 }
 
 static guint
-codegen_children(GNode *nodes)
+generate_children(GNode *nodes)
 {
 	GNode *n;
 
 	for (n = nodes->children; n; n = n->next) {
-		codegen(n);
+		generate(n);
 	}
 	
 	return 0;
 }
 
 static guint
-codegen_var(GNode *types)
+generate_var(GNode *types)
 {
 	GNode *type;
-	gint size;
+	gint size, total_size = 0;
 	
 	for (type = types->children; type; type = type->next) {
 		ASTNode *ast_node = (ASTNode *)type->data;
@@ -61,14 +69,17 @@ codegen_var(GNode *types)
 				size = 4;
 		}
 		
-		g_print("alloc %d\n", size * g_node_n_children(type));
+		size *= g_node_n_children(type);
+		total_size += size;
+		
+		g_print("alloc %d\n", size);
 	}
 	
-	return 0;
+	return total_size;
 }
 
 static guint
-codegen_if(GNode *nodes)
+generate_if(GNode *nodes)
 {
 	GNode *n;
 	guint r, l1, l2;
@@ -76,7 +87,7 @@ codegen_if(GNode *nodes)
 	l1 = label_new();
 	l2 = label_new();
 
-	r = codegen(nodes->children);
+	r = generate(nodes->children);
 	g_print("if_not t%d goto label%d\n", r, l1);
 	temp_reset();
 
@@ -84,11 +95,11 @@ codegen_if(GNode *nodes)
 		ASTNode  *ast_node = (ASTNode *) n->data;
 		
 		if (ast_node->token != T_ELSE) {
-			codegen(n);
+			generate(n);
 		} else {
 			g_print("goto label%d\n", l2);
 			g_print("\nlabel%d:\n", l1);
-			codegen_children(n);
+			generate_children(n);
 		}
 	}
 	
@@ -98,7 +109,7 @@ codegen_if(GNode *nodes)
 }
 
 static guint
-codegen_while(GNode *nodes)
+generate_while(GNode *nodes)
 {
 	GNode *n;
 	guint r, l1, l2;
@@ -107,12 +118,12 @@ codegen_while(GNode *nodes)
 	l2 = label_new();
 	
 	g_print("\nlabel%d:\n", l1);
-	r = codegen(nodes->children);
+	r = generate(nodes->children);
 	g_print("if_not t%d goto label%d\n", r, l2);
 	temp_reset();
 	
 	for (n = nodes->children->next; n; n = n->next) {
-		codegen(n);
+		generate(n);
 	}
 	
 	g_print("goto label%d\n", l1);
@@ -122,12 +133,12 @@ codegen_while(GNode *nodes)
 }
 
 static guint
-codegen_binop(GNode *node, gchar *op)
+generate_binop(GNode *node, gchar *op)
 {
 	guint r, t1, t2;
 	
-	t1 = codegen(node->children);
-	t2 = codegen(node->children->next);
+	t1 = generate(node->children);
+	t2 = generate(node->children->next);
 	
 	r = temp_new();
 	g_print("t%d := t%d %s t%d\n", r, t1, op, t2);
@@ -139,7 +150,7 @@ codegen_binop(GNode *node, gchar *op)
 }
 
 static guint
-codegen_number(gchar *n)
+generate_number(gchar *n)
 {
 	guint r;
 	
@@ -150,11 +161,11 @@ codegen_number(gchar *n)
 }
 
 static guint
-codegen_attrib(GNode *children, gchar *var_name)
+generate_attrib(GNode *children, gchar *var_name)
 {
 	guint r;
 	
-	r = codegen(children);
+	r = generate(children);
 	g_print("store %s, t%d\n", var_name, r);			
 	temp_reset();
 	
@@ -162,7 +173,7 @@ codegen_attrib(GNode *children, gchar *var_name)
 }
 
 static guint
-codegen_identifier(gchar *var_name)
+generate_identifier(gchar *var_name)
 {
 	guint r;
 	
@@ -173,7 +184,7 @@ codegen_identifier(gchar *var_name)
 }
 
 static guint
-codegen_read(gchar *var_name)
+generate_read(gchar *var_name)
 {
 	g_print("read %s\n", var_name);	
 	
@@ -181,15 +192,58 @@ codegen_read(gchar *var_name)
 }
 
 static guint
-codegen_write(gchar *var_name)
+generate_write(gchar *var_name)
 {
 	g_print("write %s\n", var_name);
 	
 	return 0;
 }
 
-guint
-codegen(GNode *node)
+static guint
+generate_procedure(GNode *node)
+{
+	ASTNode *ast_node = (ASTNode *)node->data;
+	guint var_size = 0, r;
+	GNode *n;
+	
+	r = label_new();
+	g_print("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
+	
+	symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
+	symbol_table_push_context(symbol_table);
+	
+	for (n = node->children; n; n = n->next) {
+		ast_node = (ASTNode *)n->data;
+		
+		if (ast_node->token == T_VAR)
+			var_size = generate_var(n);
+		else
+			generate(n);
+	}
+	
+	if (var_size) {
+		g_print("free %d\n", var_size);
+	}
+	
+	g_print("return\n\n");
+	symbol_table_pop_context(symbol_table);
+	
+	return r;
+}
+
+static guint
+generate_procedure_call(GNode *node)
+{
+	ASTNode *ast_node = (ASTNode *)node->data;
+	guint label;
+	
+	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
+	g_print("call label%d\n", label);
+	return 0;
+}
+
+static guint
+generate(GNode *node)
 {
 	guint r = 0;
 	ASTNode *ast_node = (ASTNode *) node->data;
@@ -204,48 +258,71 @@ codegen(GNode *node)
 		case T_OP_GEQ:
 		case T_OP_LT:
 		case T_OP_LEQ:
-			r = codegen_binop(node, (gchar *)literals[ast_node->token]);
+			r = generate_binop(node, (gchar *)literals[ast_node->token]);
 			break;
 		
 		case T_NUMBER:
-			r = codegen_number((gchar *)ast_node->data);			
+			r = generate_number((gchar *)ast_node->data);			
 			break;
 		
 		case T_ATTRIB:
-			r = codegen_attrib(node->children, (gchar *)ast_node->data);
+			r = generate_attrib(node->children, (gchar *)ast_node->data);
 			break;
 		
 		case T_VAR:
-			r = codegen_var(node);
+			r = generate_var(node);
 			break;
 		
 		case T_IDENTIFIER:
-			r = codegen_identifier((gchar *)ast_node->data);
+			r = generate_identifier((gchar *)ast_node->data);
 			break;
 
 		case T_READ:
-			r = codegen_read((gchar *)ast_node->data);
+			r = generate_read((gchar *)ast_node->data);
 			break;
 		
 		case T_WRITE:
-			r = codegen_write((gchar *)ast_node->data);
+			r = generate_write((gchar *)ast_node->data);
 			break;
 		
 		case T_WHILE:
-			r = codegen_while(node);
+			r = generate_while(node);
 			break;
 		
 		case T_IF:
-			r = codegen_if(node);
+			r = generate_if(node);
 			break;
 
 		case T_PROGRAM:
-			r = codegen_children(node);
+			r = generate_children(node);
+			break;
+		
+		case T_PROCEDURE:
+			r = generate_procedure(node);
+			break;
+			
+		case T_PROCEDURE_CALL:
+			r = generate_procedure_call(node);
 			break;
 		
 		default:
 			g_error("Panic! Don't know how to generate code for node ``%s''.", literals[ast_node->token]);
 	}
+	
+	return r;
+}
+
+guint
+codegen(GNode *root)
+{
+	guint r;
+	
+	__temp_value = __label_value = 0;
+	symbol_table = symbol_table_new();
+	
+	r = generate(root);
+	
+	symbol_table_free(symbol_table);
 	
 	return r;
 }
