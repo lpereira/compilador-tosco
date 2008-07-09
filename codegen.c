@@ -200,14 +200,21 @@ generate_write(gchar *var_name)
 }
 
 static guint
-generate_procedure(GNode *node)
+generate_procedure_or_function(GNode *node, guint procedure)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
-	guint var_size = 0, r;
+	guint var_size = 0, r, l;
 	GNode *n;
 	
 	r = label_new();
-	g_print("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
+	l = label_new();
+	
+	g_print("goto label%d\n", l);
+	
+	if (procedure)
+		g_print("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
+	else
+		g_print("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
 	
 	symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
 	symbol_table_push_context(symbol_table);
@@ -221,14 +228,22 @@ generate_procedure(GNode *node)
 			generate(n);
 	}
 	
-	if (var_size) {
+	if (var_size)
 		g_print("free %d\n", var_size);
-	}
-	
-	g_print("return\n\n");
+
+	if (procedure)
+		g_print("return\n\n");
 	symbol_table_pop_context(symbol_table);
 	
-	return r;
+	g_print("label%d:\n", l);
+
+	return r;	
+}
+
+static guint
+generate_procedure(GNode *node)
+{
+	return generate_procedure_or_function(node, TRUE);
 }
 
 static guint
@@ -238,7 +253,40 @@ generate_procedure_call(GNode *node)
 	guint label;
 	
 	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
-	g_print("call label%d\n", label);
+	g_print("call_proc label%d\n", label);
+
+	return 0;
+}
+
+static guint
+generate_function(GNode *node)
+{
+	return generate_procedure_or_function(node, FALSE);
+}
+
+static guint
+generate_function_call(GNode *node)
+{
+	ASTNode *ast_node = (ASTNode *)node->data;
+	guint r, label;
+	
+	r = temp_new();
+	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
+	
+	g_print("t%d := call_fun label%d\n", r, label);
+	
+	return r;
+}
+
+static guint
+generate_function_return(GNode *node)
+{
+	guint r;
+	
+	r = generate(node->children);
+	g_print("return_value t%d\n\n", r);
+	temp_reset();
+	
 	return 0;
 }
 
@@ -303,6 +351,18 @@ generate(GNode *node)
 			
 		case T_PROCEDURE_CALL:
 			r = generate_procedure_call(node);
+			break;
+		
+		case T_FUNCTION:
+			r = generate_function(node);
+			break;
+		
+		case T_FUNCTION_CALL:
+			r = generate_function_call(node);
+			break;
+		
+		case T_FUNCTION_RETURN:
+			r = generate_function_return(node);
 			break;
 		
 		default:

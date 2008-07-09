@@ -3,11 +3,9 @@ program test;
 var x,y,z,w: integer;
 
 function test_function : integer;
-var j;
 begin
-	j := x * 150;
-	test_function := j;
-end.
+	test_function := 5 * x;
+end;
 
 begin
 	y := 5;
