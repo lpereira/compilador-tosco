@@ -209,14 +209,16 @@ generate_number(GNode *node)
 }
 
 static guint
-generate_attrib(GNode *node)
+generate_number(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
 	GNode *children = node->children;
-	guint r;
+	guint r, offset, size;
 	
 	r = generate(children);
-	printf("store %s, t%d\n", (gchar *)ast_node->data, r);
+
+	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	printf("store stack_pointer-%d, size %d, t%d /* %s */\n", offset, size, r, (gchar *)ast_node->data);
 	temp_reset();
 	
 	return r;	
@@ -226,10 +228,11 @@ static guint
 generate_identifier(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
-	guint r;
+	guint r, offset, size;
 	
 	r = temp_new();
-	printf("load t%d, %s\n", r, (gchar *)ast_node->data);
+	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	printf("load t%d, stack_pointer-%d, size %d /* %s */\n", r, offset, size, (gchar *)ast_node->data);
 	
 	return r;
 }

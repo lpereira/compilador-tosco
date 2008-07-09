@@ -169,8 +169,6 @@ symbol_table_set_label_number(SymbolTable *st, gchar *symbol_name, guint label_n
 		entry->label_number = label_number;
 		return;
 	}
-
-	g_return_if_reached();
 }
 
 guint
@@ -195,8 +193,6 @@ symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size
 		entry->offset = offset;
 		return;
 	}
-
-	g_return_if_reached();
 }
 
 gboolean
