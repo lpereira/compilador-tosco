@@ -13,4 +13,6 @@ struct _Instruction {
 	gchar		*result;
 };
 
+guint codegen(GNode *node);
+
 #endif	 /* __CODEGEN_H__ */

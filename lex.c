@@ -743,7 +743,7 @@ static TokenList      *
 match_simple_expression(void)
 {
 	TokenList      *tl, *t;
-	int started_with_paren = 0;
+	//int started_with_paren = 0;
 	
 	tl = tl_new();
 	
