@@ -13,11 +13,14 @@
  *  - we're printing out the code; this isn't a good idea to generate
  *    the final code later -- include the generated code in a list,
  *    and use sane structures
- *  - temp_new/temp_reset. is this sane?
+ *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
  *  - neither are T_TRUE and T_FALSE values
  *  - when a function returns, the allocated variables must be freed
  *    before "return"
+ *  - load/store is buggy: need to calculate the variable address correctly
+ *    (do this in the symbol table -- sum up all variable offsets up to that
+ *     variable and add up to the offset the user set)
  */
 
 #include <string.h>
@@ -64,7 +67,7 @@ temp_zero(void)
 }
 
 static void
-temp_reset(void)
+temp_unref(void)
 {
 	__temp_value--;
 }
@@ -129,7 +132,7 @@ generate_if(GNode *nodes)
 
 	r = generate(nodes->children);
 	printf("if_not t%d goto label%d\n", r, l1);
-	temp_reset();
+	temp_unref();
 
 	for (n = nodes->children->next; n; n = n->next) {
 		ASTNode *ast_node = (ASTNode *) n->data;
@@ -165,7 +168,7 @@ generate_while(GNode *nodes)
 	printf("\nlabel%d:\n", l1);
 	r = generate(nodes->children);
 	printf("if_not t%d goto label%d\n", r, l2);
-	temp_reset();
+	temp_unref();
 	
 	for (n = nodes->children->next; n; n = n->next) {
 		generate(n);
@@ -190,8 +193,8 @@ generate_binop(GNode *node)
 	
 	printf("t%d := t%d %s t%d\n", r, t1, literals[ast_node->token], t2);
 
-	temp_reset();
-	temp_reset();
+	temp_unref();
+	temp_unref();
 	
 	return r;
 }
@@ -219,7 +222,7 @@ generate_number(GNode *node)
 
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
 	printf("store stack_pointer-%d, size %d, t%d /* %s */\n", offset, size, r, (gchar *)ast_node->data);
-	temp_reset();
+	temp_unref();
 	
 	return r;	
 }
@@ -378,7 +381,7 @@ generate_function_return(GNode *node)
 	r = generate(node->children);
 	printf("tr := t%d\n", r);
 	printf("return\n\n");
-	temp_reset();
+	temp_unref();
 	
 	return 0;
 }
