@@ -55,6 +55,12 @@ temp_new(void)
 }
 
 static void
+temp_zero(void)
+{
+	__temp_value = 0;
+}
+
+static void
 temp_reset(void)
 {
 	__temp_value--;
@@ -93,7 +99,7 @@ generate_var(GNode *types)
 		size *= g_node_n_children(type);
 		total_size += size;
 		
-		g_print("alloc %d\n", size);
+		printf("alloc %d\n", size);
 	}
 	
 	return total_size;
@@ -110,17 +116,17 @@ generate_if(GNode *nodes)
 	l2 = label_new();
 
 	r = generate(nodes->children);
-	g_print("if_not t%d goto label%d\n", r, l1);
+	printf("if_not t%d goto label%d\n", r, l1);
 	temp_reset();
 
 	for (n = nodes->children->next; n; n = n->next) {
-		ASTNode  *ast_node = (ASTNode *) n->data;
+		ASTNode *ast_node = (ASTNode *) n->data;
 		
 		if (ast_node->token != T_ELSE) {
 			generate(n);
 		} else {
-			g_print("goto label%d\n", l2);
-			g_print("\nlabel%d:\n", l1);
+			printf("goto label%d\n", l2);
+			printf("\nlabel%d:\n", l1);
 			generate_children(n);
 			
 			has_else = TRUE;
@@ -128,9 +134,9 @@ generate_if(GNode *nodes)
 	}
 	
 	if (has_else)
-		g_print("\nlabel%d:\n", l2);
+		printf("\nlabel%d:\n", l2);
 	else
-		g_print("\nlabel%d:\n", l1);
+		printf("\nlabel%d:\n", l1);
 
 	return 0;
 }
@@ -144,17 +150,17 @@ generate_while(GNode *nodes)
 	l1 = label_new();
 	l2 = label_new();
 	
-	g_print("\nlabel%d:\n", l1);
+	printf("\nlabel%d:\n", l1);
 	r = generate(nodes->children);
-	g_print("if_not t%d goto label%d\n", r, l2);
+	printf("if_not t%d goto label%d\n", r, l2);
 	temp_reset();
 	
 	for (n = nodes->children->next; n; n = n->next) {
 		generate(n);
 	}
 	
-	g_print("goto label%d\n", l1);
-	g_print("\nlabel%d:\n", l2);
+	printf("goto label%d\n", l1);
+	printf("\nlabel%d:\n", l2);
 
 	return 0;
 }
@@ -164,11 +170,12 @@ generate_binop(GNode *node, gchar *op)
 {
 	guint r, t1, t2;
 	
+	r = temp_new();
+
 	t1 = generate(node->children);
 	t2 = generate(node->children->next);
 	
-	r = temp_new();
-	g_print("t%d := t%d %s t%d\n", r, t1, op, t2);
+	printf("t%d := t%d %s t%d\n", r, t1, op, t2);
 
 	temp_reset();
 	temp_reset();
@@ -182,7 +189,7 @@ generate_number(gchar *n)
 	guint r;
 	
 	r = temp_new();
-	g_print("t%d := %s\n", r, n);
+	printf("t%d := %s\n", r, n);
 	
 	return r;
 }
@@ -193,7 +200,7 @@ generate_attrib(GNode *children, gchar *var_name)
 	guint r;
 	
 	r = generate(children);
-	g_print("store %s, t%d\n", var_name, r);			
+	printf("store %s, t%d\n", var_name, r);			
 	temp_reset();
 	
 	return r;	
@@ -205,7 +212,7 @@ generate_identifier(gchar *var_name)
 	guint r;
 	
 	r = temp_new();
-	g_print("load t%d, %s\n", r, var_name);
+	printf("load t%d, %s\n", r, var_name);
 	
 	return r;
 }
@@ -213,7 +220,7 @@ generate_identifier(gchar *var_name)
 static guint
 generate_read(gchar *var_name)
 {
-	g_print("read %s\n", var_name);	
+	printf("read %s\n", var_name);	
 	
 	return 0;
 }
@@ -221,7 +228,7 @@ generate_read(gchar *var_name)
 static guint
 generate_write(gchar *var_name)
 {
-	g_print("write %s\n", var_name);
+	printf("write %s\n", var_name);
 	
 	return 0;
 }
@@ -235,14 +242,15 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	
 	r = label_new();
 	l = label_new();
+	temp_zero();
 	
-	g_print("goto label%d\n", l);
+	printf("goto label%d\n", l);
 	
 	if (procedure) {
-		g_print("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
+		printf("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
 		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, r);
 	} else {
-		g_print("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
+		printf("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
 		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_FUNCTION, r);
 	}
 	
@@ -258,14 +266,14 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	}
 	
 	if (var_size)
-		g_print("free %d\n", var_size);
+		printf("free %d\n", var_size);
 
 	if (procedure)
-		g_print("return\n\n");
+		printf("return\n\n");
 
 	symbol_table_pop_context(symbol_table);
 	
-	g_print("label%d:\n", l);
+	printf("label%d:\n", l);
 
 	return r;	
 }
@@ -281,9 +289,9 @@ context_save(void)
 {
 	guint i;
 	
-	stack_push(context, GINT_TO_POINTER(__temp_value + 1));
-	for (i = 1; i <= __temp_value + 1; i++) {
-		g_print("push t%d\n", i);
+	stack_push(context, GINT_TO_POINTER(__temp_value));
+	for (i = 1; i <= __temp_value; i++) {
+		printf("push t%d\n", i);
 	}
 }
 
@@ -294,7 +302,7 @@ context_restore(void)
 	
 	i = GPOINTER_TO_INT(stack_pop(context));
 	for (; i >= 1; i--) {
-		g_print("pop t%d\n", i);
+		printf("pop t%d\n", i);
 	}
 }
 
@@ -307,7 +315,7 @@ generate_procedure_call(GNode *node)
 	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
 	
 	context_save();
-	g_print("call label%d\n", label);
+	printf("call label%d\n", label);
 	context_restore();
 
 	return 0;
@@ -329,9 +337,10 @@ generate_function_call(GNode *node)
 	
 	r = temp_new();
 	context_save();
-	g_print("call label%d\n", label);
-	g_print("t%d := return_value (FIXME!)\n", r);
+	printf("call label%d\n", label);
 	context_restore();
+
+	printf("t%d := tr\n", r);
 	
 	return r;
 }
@@ -342,7 +351,8 @@ generate_function_return(GNode *node)
 	guint r;
 	
 	r = generate(node->children);
-	g_print("return_value t%d\n\n", r);
+	printf("tr := t%d\n", r);
+	printf("return\n\n");
 	temp_reset();
 	
 	return 0;
