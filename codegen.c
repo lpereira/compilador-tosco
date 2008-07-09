@@ -1,3 +1,22 @@
+/*
+ * Simple Pascal Compiler
+ * Code Generator
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+/*
+ * BUGS / ISSUES / TODO / FIXME / WTFBBQ
+ *  - the code crashes sometimes; symbol table issues?
+ *  - function and procedure calling code generation is wrong
+ *  - must add a jump to the "main program" right after global variable
+ *    declaration
+ *  - we're printing out the code; this isn't a good idea to generate
+ *    the final code later -- include the generated code in a list,
+ *    and use sane structures
+ *  - temp_new/temp_reset. is this sane?
+ *  - unary operations are not supported
+ *  - neither are T_TRUE and T_FALSE values
+ */
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,8 +33,8 @@
 /***/
 
 static guint __temp_value = 0, __label_value = 0;
-static SymbolTable *symbol_table;
-static Stack *context;
+static SymbolTable *symbol_table = NULL;
+static Stack *context = NULL;
 
 /***/
 
@@ -85,6 +104,7 @@ generate_if(GNode *nodes)
 {
 	GNode *n;
 	guint r, l1, l2;
+	gboolean has_else = FALSE;
 	
 	l1 = label_new();
 	l2 = label_new();
@@ -102,10 +122,15 @@ generate_if(GNode *nodes)
 			g_print("goto label%d\n", l2);
 			g_print("\nlabel%d:\n", l1);
 			generate_children(n);
+			
+			has_else = TRUE;
 		}
 	}
 	
-	g_print("\nlabel%d:\n", l2);
+	if (has_else)
+		g_print("\nlabel%d:\n", l2);
+	else
+		g_print("\nlabel%d:\n", l1);
 
 	return 0;
 }
@@ -256,8 +281,8 @@ context_save(void)
 {
 	guint i;
 	
-	stack_push(context, GINT_TO_POINTER(__temp_value));
-	for (i = 1; i <= __temp_value; i++) {
+	stack_push(context, GINT_TO_POINTER(__temp_value + 1));
+	for (i = 1; i <= __temp_value + 1; i++) {
 		g_print("push t%d\n", i);
 	}
 }
@@ -268,7 +293,6 @@ context_restore(void)
 	guint i;
 	
 	i = GPOINTER_TO_INT(stack_pop(context));
-	
 	for (; i >= 1; i--) {
 		g_print("pop t%d\n", i);
 	}
@@ -303,9 +327,8 @@ generate_function_call(GNode *node)
 	
 	label = symbol_table_get_entry_kind(symbol_table, (gchar *)ast_node->data);
 	
-	context_save();
 	r = temp_new();
-	
+	context_save();
 	g_print("call label%d\n", label);
 	g_print("t%d := return_value (FIXME!)\n", r);
 	context_restore();
@@ -341,6 +364,7 @@ generate(GNode *node)
 		case T_OP_GEQ:
 		case T_OP_LT:
 		case T_OP_LEQ:
+		case T_OP_DIFFERENT:
 			r = generate_binop(node, (gchar *)literals[ast_node->token]);
 			break;
 		

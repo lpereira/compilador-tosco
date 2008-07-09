@@ -37,10 +37,9 @@ symbol_table_push_context(SymbolTable *st)
 	GHashTable *ht;
 	
 	g_return_if_fail(st);
-	
-//	puts("/*push context*/");
-	
+		
 	ht = g_hash_table_new(g_str_hash, g_str_equal);
+	g_hash_table_ref(ht);
 	st->table = g_list_prepend(st->table, ht);
 }
 
@@ -51,12 +50,10 @@ symbol_table_pop_context(SymbolTable *st)
 	
 	g_return_if_fail(st);
 
-//	puts("/*pop context*/");
-	
 	first = st->table;
 	st->table = first->next;
 	
-	g_hash_table_destroy((GHashTable *) first->data);
+	g_hash_table_unref((GHashTable *) first->data);
 	g_list_free_1(first);
 }
 
@@ -71,8 +68,6 @@ symbol_table_install(SymbolTable *st, gchar *symbol_name, STEntryType type, STEn
 	
 	if (symbol_table_is_installed(st, symbol_name))
 		return;
-
-//	g_print("/*install (%s,%s,%s)*/\n", symbol_name, st_types[type], sk_types[kind]);
 	
 	ht = (GHashTable *)st->table->data;
 	
