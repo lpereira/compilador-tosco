@@ -31,17 +31,19 @@ temp_reset(void)
 	__temp_value--;
 }
 
-static void
+static guint
 codegen_children(GNode *nodes)
 {
 	GNode *n;
 
 	for (n = nodes->children; n; n = n->next) {
 		codegen(n);
-	}	
+	}
+	
+	return 0;
 }
 
-static void
+static guint
 codegen_var(GNode *types)
 {
 	GNode *type;
@@ -61,9 +63,11 @@ codegen_var(GNode *types)
 		
 		g_print("alloc %d\n", size * g_node_n_children(type));
 	}
+	
+	return 0;
 }
 
-static void
+static guint
 codegen_if(GNode *nodes)
 {
 	GNode *n;
@@ -89,9 +93,11 @@ codegen_if(GNode *nodes)
 	}
 	
 	g_print("\nlabel%d:\n", l2);
+
+	return 0;
 }
 
-static void
+static guint
 codegen_while(GNode *nodes)
 {
 	GNode *n;
@@ -112,13 +118,81 @@ codegen_while(GNode *nodes)
 	g_print("goto label%d\n", l1);
 	g_print("\nlabel%d:\n", l2);
 
+	return 0;
+}
+
+static guint
+codegen_binop(GNode *node, gchar *op)
+{
+	guint r, t1, t2;
+	
+	t1 = codegen(node->children);
+	t2 = codegen(node->children->next);
+	
+	r = temp_new();
+	g_print("t%d := t%d %s t%d\n", r, t1, op, t2);
+
+	temp_reset();
+	temp_reset();
+	
+	return r;
+}
+
+static guint
+codegen_number(gchar *n)
+{
+	guint r;
+	
+	r = temp_new();
+	g_print("t%d := %s\n", r, n);
+	
+	return r;
+}
+
+static guint
+codegen_attrib(GNode *children, gchar *var_name)
+{
+	guint r;
+	
+	r = codegen(children);
+	g_print("store %s, t%d\n", var_name, r);			
+	temp_reset();
+	
+	return r;	
+}
+
+static guint
+codegen_identifier(gchar *var_name)
+{
+	guint r;
+	
+	r = temp_new();
+	g_print("load t%d, %s\n", r, var_name);
+	
+	return r;
+}
+
+static guint
+codegen_read(gchar *var_name)
+{
+	g_print("read %s\n", var_name);	
+	
+	return 0;
+}
+
+static guint
+codegen_write(gchar *var_name)
+{
+	g_print("write %s\n", var_name);
+	
+	return 0;
 }
 
 guint
 codegen(GNode *node)
 {
-	guint r, t1, t2;
-	ASTNode  *ast_node = (ASTNode *) node->data;
+	guint r = 0;
+	ASTNode *ast_node = (ASTNode *) node->data;
 		
 	switch (ast_node->token) {
 		case T_MINUS:
@@ -130,61 +204,47 @@ codegen(GNode *node)
 		case T_OP_GEQ:
 		case T_OP_LT:
 		case T_OP_LEQ:
-			t1 = codegen(node->children);
-			t2 = codegen(node->children->next);
-			
-			r = temp_new();
-			g_print("t%d := t%d %s t%d\n", r, t1, literals[ast_node->token], t2);
-
-			temp_reset();
-			temp_reset();
-		
+			r = codegen_binop(node, (gchar *)literals[ast_node->token]);
 			break;
 		
 		case T_NUMBER:
-			r = temp_new();
-			g_print("t%d := %s\n", r, (gchar *)ast_node->data);
-			
+			r = codegen_number((gchar *)ast_node->data);			
 			break;
 		
-		case T_ATTRIB:			
-		 	r = codegen(node->children);
-			g_print("store %s, t%d\n", (gchar *)ast_node->data, r);			
-			temp_reset();
+		case T_ATTRIB:
+			r = codegen_attrib(node->children, (gchar *)ast_node->data);
 			break;
 		
 		case T_VAR:
-			codegen_var(node);
+			r = codegen_var(node);
 			break;
 		
 		case T_IDENTIFIER:
-			r = temp_new();
-			g_print("t%d := %s\n", r, (gchar *)ast_node->data);
-			
+			r = codegen_identifier((gchar *)ast_node->data);
 			break;
 
 		case T_READ:
-			g_print("read_integer %s\n", (gchar *)ast_node->data);
+			r = codegen_read((gchar *)ast_node->data);
 			break;
 		
 		case T_WRITE:
-			g_print("write_integer %s\n", (gchar *)ast_node->data);
+			r = codegen_write((gchar *)ast_node->data);
 			break;
 		
 		case T_WHILE:
-			codegen_while(node);
+			r = codegen_while(node);
 			break;
 		
 		case T_IF:
-			codegen_if(node);
+			r = codegen_if(node);
 			break;
 
 		case T_PROGRAM:
-			codegen_children(node);
+			r = codegen_children(node);
 			break;
 		
 		default:
-			g_print("; %s %s\n", literals[ast_node->token], (gchar *)ast_node->data);
+			g_error("Panic! Don't know how to generate code for node ``%s''.", literals[ast_node->token]);
 	}
 	
 	return r;
