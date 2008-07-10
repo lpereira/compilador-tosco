@@ -142,10 +142,11 @@ generate_if(GNode *nodes)
 		}
 	}
 	
-	if (has_else)
+	if (has_else) {
 		printf("\nlabel%d:\n", l2);
-	else
+	} else {
 		printf("\nlabel%d:\n", l1);
+	}
 
 	return 0;
 }
@@ -216,9 +217,10 @@ generate_attrib(GNode *node)
 
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
 	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
+
 	printf("\tstore mp-%d, %d, t%d\n", offset, size, r);
 	temp_unref();
-	
+
 	return r;	
 }
 
@@ -227,12 +229,14 @@ generate_identifier(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r, offset, size;
-	
+
 	r = temp_new();
+
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
 	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
+
 	printf("\tload t%d, mp-%d, %d\n", r, offset, size);
-	
+
 	return r;
 }
 
