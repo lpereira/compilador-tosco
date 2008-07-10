@@ -299,11 +299,11 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	if (procedure)
 		printf("return\n\n");
 
-	symbol_table_pop_context(symbol_table);
-	
 	printf("label%d:\n", l);
 
-	return r;	
+	symbol_table_pop_context(symbol_table);
+
+	return r;
 }
 
 static guint
@@ -316,7 +316,7 @@ static void
 context_save(void)
 {
 	guint i;
-	
+
 	stack_push(context, GINT_TO_POINTER(__temp_value));
 	for (i = 1; i <= __temp_value; i++) {
 		printf("push t%d\n", i);
@@ -327,7 +327,7 @@ static void
 context_restore(void)
 {
 	guint i;
-	
+
 	i = GPOINTER_TO_INT(stack_pop(context));
 	for (; i >= 1; i--) {
 		printf("pop t%d\n", i);
@@ -339,9 +339,9 @@ generate_procedure_call(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint label;
-	
+
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
-	
+
 	context_save();
 	printf("call label%d\n", label);
 	context_restore();
