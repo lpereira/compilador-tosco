@@ -9,7 +9,8 @@
  * FIXME: programx fica com dois tokens: program x
  * FIXME: beginx:=10end usa 5 tokens: begin, x, :=, 10, end
  * FIXME: (expressao) nao tah funcionando. pq? :~
- * FIXME: true/false tb nao funciona (ordem?)
+ * FIXME: if/else tah meio zoado...
+ * FIXME: operadores unarios!
  */
 #include <string.h>
 #include <stdio.h>
@@ -29,7 +30,7 @@ const char     *literals[] = {
 	"procedure", "program", "read", ";", "then",
 	"true", "var", "while", "write",
 	"id", "number",
-	"return", "function call", "procedure call"
+	"return", "function call", "procedure call", "-"
 };
 
 static int      line = 1, column = 1;
@@ -748,9 +749,8 @@ match_simple_expression(void)
 	
 	tl = tl_new();
 	
-	if ((t = match_token(T_PLUS)) ||
-	    (t = match_token(T_MINUS))) {	/* FIXME T_PLUS eu posso
-						 * ignorar; T_MINUS_UNARY!@# */
+	SUPPRESS(match_token(T_PLUS));
+	if ((t = match_token(T_UNARY_MINUS))) {
 		tl_add_token(&tl, t);
 	}
 	tl_add_token(&tl, match_term_req());
