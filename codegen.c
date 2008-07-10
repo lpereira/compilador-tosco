@@ -15,7 +15,6 @@
  *    and use sane structures
  *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
- *  - neither are T_TRUE and T_FALSE values
  *  - load/store is buggy: need to calculate the variable address correctly
  *    (do this in the symbol table -- sum up all variable offsets up to that
  *     variable and add up to the offset the user set)
@@ -343,24 +342,26 @@ generate_procedure(GNode *node)
 }
 
 static void
-context_save(void)
+context_save(guint except)
 {
 	guint i;
 
 	stack_push(context, GINT_TO_POINTER(__temp_value));
 	for (i = 1; i <= __temp_value; i++) {
-		printf("\tpush t%d\n", i);
+		if (i != except)
+			printf("\tpush t%d\n", i);
 	}
 }
 
 static void
-context_restore(void)
+context_restore(guint except)
 {
 	guint i;
 
 	i = GPOINTER_TO_INT(stack_pop(context));
 	for (; i >= 1; i--) {
-		printf("\tpop t%d\n", i);
+		if (i != except)
+			printf("\tpop t%d\n", i);
 	}
 }
 
@@ -372,9 +373,9 @@ generate_procedure_call(GNode *node)
 
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 
-	context_save();
+	context_save(-1);
 	printf("\tcall label%d\n", label);
-	context_restore();
+	context_restore(-1);
 
 	return 0;
 }
@@ -394,11 +395,33 @@ generate_function_call(GNode *node)
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 	
 	r = temp_new();
-	context_save();
+	context_save(r);
 	printf("\tcall label%d\n", label);
-	context_restore();
+	context_restore(r);
 
 	printf("\tt%d := tr\n", r);
+	
+	return r;
+}
+
+static guint
+generate_true(GNode *node)
+{
+	guint r;
+	
+	r = temp_new();
+	printf("\tt%d := 1\n", r);
+	
+	return r;
+}
+
+static guint
+generate_false(GNode *node)
+{
+	guint r;
+	
+	r = temp_new();
+	printf("\tt%d := 0\n", r);
 	
 	return r;
 }
@@ -421,6 +444,12 @@ generate(GNode *node)
 		case T_OP_LEQ:
 		case T_OP_DIFFERENT:
 			r = generate_binop(node);
+			break;
+		case T_TRUE:
+			r = generate_true(node);
+			break;
+		case T_FALSE:
+			r = generate_false(node);
 			break;
 		case T_NUMBER:
 			r = generate_number(node);
@@ -471,23 +500,19 @@ generate(GNode *node)
 	return r;
 }
 
-guint
+void
 codegen(GNode *root)
 {
-	guint r;
-	
 	__temp_value = __label_value = 0;
 	symbol_table = symbol_table_new();
 	context = stack_new();
 	var_sizes = stack_new();
 	
-	r = generate(root);
+	generate(root);
 	
 	symbol_table_free(symbol_table);
 	stack_free(context);
 	stack_free(var_sizes);
-	
-	return r;
 }
 
 #ifdef CODEGEN_TEST

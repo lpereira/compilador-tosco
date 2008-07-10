@@ -9,6 +9,7 @@
  * FIXME: programx fica com dois tokens: program x
  * FIXME: beginx:=10end usa 5 tokens: begin, x, :=, 10, end
  * FIXME: (expressao) nao tah funcionando. pq? :~
+ * FIXME: true/false tb nao funciona (ordem?)
  */
 #include <string.h>
 #include <stdio.h>
@@ -698,7 +699,7 @@ static TokenList      *
 match_expression(void)
 {
 	TokenList      *tl, *t;
-	int				started_with_paren = 0;
+	int		started_with_paren = 0;
 
 	tl = tl_new();
 	
@@ -798,11 +799,11 @@ match_factor(void)
 
 	tl = tl_new();
 
-	if ((t = match_variable()) ||
+	if ((t = match_token(T_TRUE)) ||
+	    (t = match_token(T_FALSE)) ||
+	    (t = match_variable()) ||
 	    (t = match_number()) ||
-	    (t = match_function_call()) ||
-	    (t = match_token(T_TRUE)) ||
-	    (t = match_token(T_FALSE))) {
+	    (t = match_function_call())) {
 		tl_add_token(&tl, t);
 	} else if ((t = match_token(T_OPENPAREN))) {
 		tl_add_token(&tl, t);

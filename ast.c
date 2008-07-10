@@ -252,6 +252,8 @@ ast_expression(GNode * root, GList ** tokens, TokenType stop)
 		default:
 			break;
 		case T_NUMBER:
+		case T_FALSE:
+		case T_TRUE:
 			stack_push(node_stack, g_node_new(ast_node_new(token->type, token->id)));
 			break;
 		case T_IDENTIFIER:
