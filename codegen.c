@@ -16,8 +16,6 @@
  *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
  *  - neither are T_TRUE and T_FALSE values
- *  - when a function returns, the allocated variables must be freed
- *    before "return"
  *  - load/store is buggy: need to calculate the variable address correctly
  *    (do this in the symbol table -- sum up all variable offsets up to that
  *     variable and add up to the offset the user set)
