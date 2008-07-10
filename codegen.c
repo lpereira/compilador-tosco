@@ -212,7 +212,7 @@ generate_number(GNode *node)
 }
 
 static guint
-generate_number(GNode *node)
+generate_attrib(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
 	GNode *children = node->children;
