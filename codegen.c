@@ -7,17 +7,14 @@
 /*
  * BUGS / ISSUES / TODO / FIXME / WTFBBQ
  *  - the code crashes sometimes; symbol table issues? (SEEMS FIXED?)
- *  - function and procedure calling code generation is wrong (SEEMS FIXED?)
  *  - must add a jump to the "main program" right after global variable
- *    declaration
+ *    declaration (we currently do a jump to a label, which jumps ahead until
+ *    we find the main program; this works but is kludgy)
  *  - we're printing out the code; this isn't a good idea to generate
  *    the final code later -- include the generated code in a list,
  *    and use sane structures
  *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
- *  - load/store is buggy: need to calculate the variable address correctly
- *    (do this in the symbol table -- sum up all variable offsets up to that
- *     variable and add up to the offset the user set)
  */
 
 #include <string.h>
@@ -281,7 +278,7 @@ static guint
 generate_procedure_or_function(GNode *node, guint procedure)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
-	guint var_size = 0, r, l;
+	guint var_size = 0, l, r;
 	GNode *n;
 	
 	r = label_new();
@@ -289,22 +286,17 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	temp_zero();
 	
 	printf("\tgoto label%d\n", l);
+	printf("\n%s@%d:\n", (gchar *)ast_node->data, r);
 	
-	if (procedure) {
-		printf("\nlabel%d: /* procedure %s */\n", r, (gchar *)ast_node->data);
-		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_PROCEDURE, SK_NONE);
-	} else {
-		printf("\nlabel%d: /* function %s */\n", r, (gchar *)ast_node->data);
-		symbol_table_install(symbol_table, (gchar *)ast_node->data, ST_FUNCTION, SK_NONE);
-	}
-
+	symbol_table_install(symbol_table, (gchar *)ast_node->data,
+						 procedure ? ST_PROCEDURE : ST_FUNCTION, SK_NONE);
 	symbol_table_set_label_number(symbol_table, (gchar *)ast_node->data, r);
 	symbol_table_push_context(symbol_table);
 	
 	if (!procedure) {
 		stack_push(var_sizes, GUINT_TO_POINTER(var_size));
 	}
-	
+
 	for (n = node->children; n; n = n->next) {
 		ast_node = (ASTNode *)n->data;
 		
@@ -334,7 +326,7 @@ generate_procedure_or_function(GNode *node, guint procedure)
 
 	symbol_table_pop_context(symbol_table);
 
-	return r;
+	return 0;
 }
 
 static guint
@@ -376,7 +368,7 @@ generate_procedure_call(GNode *node)
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 
 	context_save(-1);
-	printf("\tcall label%d\n", label);
+	printf("\tcall %s@%d\n", (gchar *)ast_node->data, label);
 	context_restore(-1);
 
 	return 0;
@@ -393,12 +385,12 @@ generate_function_call(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
 	guint r, label;
-	
+
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
-	
+
 	r = temp_new();
 	context_save(r);
-	printf("\tcall label%d\n", label);
+	printf("\tcall %s@%d\n", (gchar *)ast_node->data, label);
 	context_restore(r);
 
 	printf("\tt%d := tr\n", r);
