@@ -218,6 +218,7 @@ generate_attrib(GNode *node)
 	r = generate(children);
 
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
 	printf("\tstore mp-%d, %d, t%d\n", offset, size, r);
 	temp_unref();
 	
@@ -232,6 +233,7 @@ generate_identifier(GNode *node)
 	
 	r = temp_new();
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
 	printf("\tload t%d, mp-%d, %d\n", r, offset, size);
 	
 	return r;
@@ -494,7 +496,9 @@ generate(GNode *node)
 			r = generate_function_return(node);
 			break;
 		default:
-			g_error("Houston, we have a problem! Don't know how to generate code for node type ``%s''.", literals[ast_node->token]);
+			g_error("Houston, we have a problem! Don't know how to "
+			        "generate code for node type ``%s'' (%d).",
+			        literals[ast_node->token], ast_node->token);
 	}
 	
 	return r;

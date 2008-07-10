@@ -183,6 +183,43 @@ symbol_table_get_label_number(SymbolTable *st, gchar *symbol_name)
 	return -1;
 }
 
+static void
+__update_offset_fn(gpointer key, gpointer value, guint *offset)
+{
+	STEntry *e = (STEntry *)value;
+	*offset += e->size;
+}
+
+guint 
+symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name)
+{
+	guint offset = 0;
+	GList *list;
+	STEntry *entry;
+
+	list = st->table;
+
+	if ((entry = g_hash_table_lookup((GHashTable *)list->data, symbol_name))) {
+		return 0;
+	}
+
+	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
+		if (list->next) {
+			list = list->next;
+		} else {
+			return 0;
+		}
+
+		for (; list; list = list->next) {
+			g_hash_table_foreach((GHashTable *)list->data, (GHFunc)__update_offset_fn, (gpointer) &offset);
+		}
+
+		return offset;
+	}
+	
+	return 0;
+}
+
 void
 symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size, guint offset)
 {
@@ -191,7 +228,6 @@ symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size
 	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
 		entry->size = size;
 		entry->offset = offset;
-		return;
 	}
 }
 

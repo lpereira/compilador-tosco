@@ -54,4 +54,6 @@ guint		 symbol_table_get_label_number(SymbolTable *st, gchar *symbol_name);
 void		 symbol_table_set_size_and_offset(SymbolTable *st, gchar *symbol_name, guint size, guint offset);
 gboolean	 symbol_table_get_size_and_offset(SymbolTable *st, gchar *symbol_name, guint *size, guint *offset);
 
+guint		 symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name);
+
 #endif	/* __SYMBOL_TABLE_H__ */
