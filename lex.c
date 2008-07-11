@@ -65,6 +65,22 @@ static TokenList *match_number(void);
 static void     lex_error(char *message);
 static void     lex_error2(char *message, char *arg);
 
+
+
+static void
+dumpbuf()
+{
+	GSList *l;
+	
+	printf("dumpbuf() -> ");
+	
+	for (l = char_buf; l; l = l->next) {
+		printf("[%c] ", (gchar)GPOINTER_TO_INT(l->data));
+	}
+	
+	printf("\n");
+}
+
 static void
 char_buf_put(char ch)
 {
@@ -74,6 +90,8 @@ char_buf_put(char ch)
 static int
 char_buf_get(void)
 {
+	dumpbuf();
+
 	if (char_buf == NULL) {
 		return -1;
 	} else {
@@ -119,7 +137,9 @@ get_character(void)
 	} else {
 		column++;
 	}
-		
+	
+	printf("get_character() = %d [%c]\n", ch, ch);
+	
 	return ch;
 }
 
@@ -130,6 +150,8 @@ get_character_notblank(void)
 
 	do {
 		ch = get_character();
+		
+		printf("get_character_not_blank(%c)\n", ch);
 
 		/* eat comments */
 		if (ch == '{') {
@@ -167,6 +189,9 @@ unget_character(char ch)
 					 */
 
 	char_buf_put(ch);
+	printf("unget_character(%d, '%c')\n", ch, ch);
+	dumpbuf();
+	
 }
 
 static void
@@ -277,6 +302,8 @@ match_token(TokenType token_type)
 		
 		token_list = g_new0(TokenList, 1);
 		token_list->tokens = g_list_append(token_list->tokens, token);
+
+		puts(token->id);
 
 		return token_list;		
 	}
@@ -525,6 +552,8 @@ match_commands(void)
 	if ((t = match_token(T_BEGIN))) {
 		tl = tl_new();
 
+		puts("achei um begin");
+
 		tl_add_token(&tl, t);
 		tl_add_token(&tl, match_command_req());
 
@@ -534,8 +563,8 @@ match_commands(void)
 		}
 
 		tl_add_token(&tl, match_token(T_SEMICOLON));
-
 		tl_add_token(&tl, match_token_req(T_END));
+		
 		return tl;
 	}
 	return NULL;
@@ -551,16 +580,14 @@ match_command(void)
 {
 	TokenList      *t;
 
-	if ((t = match_attrib_call()) ||
-	    (t = match_conditional()) ||
-	    (t = match_while()) ||
-	    (t = match_read()) ||
-	    (t = match_write()) ||
-	    (t = match_commands()) ||
-	    (t = match_function_declare()) ||
-	    (t = match_procedure_declare()))	/* XXX: mover esses dois pra
-						 * match_commands()? */
-		return t;
+	if ((t = match_attrib_call())) return t;
+	else if ((t = match_conditional())) return t;
+	else if ((t = match_while())) return t;
+	else if ((t = match_read())) return t;
+	else if ((t = match_write())) return t;
+	else if ((t = match_commands())) return t;
+	else if ((t = match_function_declare())) return t;
+	else if ((t = match_procedure_declare())) return t;	/* FIXME: mover esses dois pra match_commands()? */
 
 	return NULL;
 }
@@ -609,7 +636,14 @@ match_attrib(void)
 static TokenList      *
 match_procedure_call(void)
 {
-	return match_identifier();
+	TokenList *t;
+	
+	t = match_identifier();
+	if (t) {
+		SUPPRESS(match_token(T_SEMICOLON));
+		return t;
+	}
+	return NULL;
 }
 
 /* <cmd_condicional> ::= se <expressao> entao <comando> [senao <comando>] */
@@ -624,11 +658,19 @@ match_conditional(void)
 		tl_add_token(&tl, t);
 		tl_add_token(&tl, match_expression_req());
 		tl_add_token(&tl, match_token_req(T_THEN));
+		
+		puts("vou procurar um comando");
 		tl_add_token(&tl, match_command_req());
-
+		puts("achei o comando");
+		
+		puts("vou procurar o else");
 		if ((t = match_token(T_ELSE))) {
+			puts("achei");
 			tl_add_token(&tl, t);
 			tl_add_token(&tl, match_command_req());
+		} else {
+			dumpbuf();
+			puts("nao achei");
 		}
 		return tl;
 	}
@@ -744,7 +786,6 @@ static TokenList      *
 match_simple_expression(void)
 {
 	TokenList      *tl, *t;
-	//int started_with_paren = 0;
 	
 	tl = tl_new();
 	
@@ -874,25 +915,23 @@ match_identifier(void)
 			}
 		}
 		
-		if (index) {
-			if (reserved_token(buffer)) {
-				unget_string(buffer);
-				return NULL;
-			}
-
-			t = g_new0(Token, 1);
-			t->type = T_IDENTIFIER;
-			t->id = strdup(buffer);
-			t->line = line;
-			t->column = column - index - 1; /* point to start of token */
-
-			tl = tl_new();
-			tl->tokens = g_list_append(tl->tokens, t);
-
-			return tl;		
-		} else {
+		if (reserved_token(buffer)) {
+			unget_string(buffer);
 			return NULL;
 		}
+
+		t = g_new0(Token, 1);
+		t->type = T_IDENTIFIER;
+		t->id = strdup(buffer);
+		t->line = line;
+		t->column = column - index - 1; /* point to start of token */
+
+		tl = tl_new();
+		tl->tokens = g_list_append(tl->tokens, t);
+
+		printf("identifier found: %s\n", t->id);
+
+		return tl;		
 	}
 	
 	unget_character(ch);
@@ -924,21 +963,17 @@ match_number(void)
 			}
 		}
 		
-		if (index) {
-			tl = tl_new();
+		tl = tl_new();
 
-			t = g_new0(Token, 1);
-			t->type = T_NUMBER;
-			t->id = strdup(buffer);
-			t->line = line;
-			t->column = column;
+		t = g_new0(Token, 1);
+		t->type = T_NUMBER;
+		t->id = strdup(buffer);
+		t->line = line;
+		t->column = column;
 
-			tl->tokens = g_list_append(tl->tokens, t);
+		tl->tokens = g_list_append(tl->tokens, t);
 
-			return tl;			
-		} else {
-			return NULL;
-		}
+		return tl;			
 	}
 	
 	unget_character(ch);

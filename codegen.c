@@ -15,6 +15,7 @@
  *    and use sane structures
  *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
+ *  - free global variables memory
  */
 
 #include <string.h>
