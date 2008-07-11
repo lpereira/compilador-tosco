@@ -597,17 +597,7 @@ match_attrib(void)
 			tl_unref(t1);
 			return tl;
 		} else {
-			char            buffer[128];
-			int             index = 0, ch;
-
-			for (ch = char_buf_get(); ch != -1; ch = char_buf_get()) {
-				buffer[index++] = ch;
-				buffer[index] = '\0';
-			}
-
 			unget_tokenlist(t1);
-			unget_string(buffer);
-
 			tl_unref(t1);
 			tl_destroy(tl);
 		}
@@ -709,13 +699,13 @@ static TokenList      *
 match_expression(void)
 {
 	TokenList      *tl, *t;
-	int		started_with_paren = 0;
+	gboolean		started_with_paren = FALSE;
 
 	tl = tl_new();
 	
 	if ((t = match_token(T_OPENPAREN))) {
 		tl_add_token(&tl, t);
-		started_with_paren = 1;
+		started_with_paren = TRUE;
 	}
 	
 	tl_add_token(&tl, match_simple_expression_req());
