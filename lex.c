@@ -8,7 +8,6 @@
 /*
  * FIXME: programx fica com dois tokens: program x
  * FIXME: beginx:=10end usa 5 tokens: begin, x, :=, 10, end
- * FIXME: (expressao) nao tah funcionando. pq? :~
  * FIXME: if/else tah meio zoado...
  * FIXME: operadores unarios!
  */
