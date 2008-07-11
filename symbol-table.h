@@ -5,6 +5,7 @@
 
 typedef enum {
 	ST_NONE,
+	ST_PROGRAM,
 	ST_VARIABLE,
 	ST_FUNCTION,
 	ST_PROCEDURE,

@@ -428,7 +428,11 @@ ast_read(GNode * root, GList ** tokens)
 		case SK_INTEGER:
 			break;
 		case SK_NONE:
-			ast_error_token(token, "undefined symbol");
+			if (symbol_table_get_entry_type(symbol_table, token->id) == ST_PROGRAM) {
+				ast_error_token(token, "symbol is program name");
+			} else {
+				ast_error_token(token, "undefined symbol");
+			}
 			break;
 		default:
 			ast_error_token(token, "variable is not integer");
@@ -451,7 +455,11 @@ ast_write(GNode * root, GList ** tokens)
 		case SK_INTEGER:
 			break;
 		case SK_NONE:
-			ast_error_token(token, "undefined symbol");
+			if (symbol_table_get_entry_type(symbol_table, token->id) == ST_PROGRAM) {
+				ast_error_token(token, "symbol is program name");
+			} else {
+				ast_error_token(token, "undefined symbol");
+			}
 			break;
 		default:
 			ast_error_token(token, "variable is not integer");
@@ -580,6 +588,7 @@ ast(TokenList * token_list)
 	
 	token = (Token *) (token_list->tokens)->next->data;
 	ast = g_node_new(ast_node_new(T_PROGRAM, token->id));
+	symbol_table_install(symbol_table, token->id, ST_PROGRAM, SK_NONE);
 
 	tokens = token_list->tokens->next->next;
 	ast_recursive(ast, &tokens);

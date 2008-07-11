@@ -1,6 +1,6 @@
 #include "symbol-table.h"
 
-gchar *st_types[] = { "", "variable", "function", "procedure" };
+gchar *st_types[] = { "", "program", "variable", "function", "procedure" };
 gchar *sk_types[] = { "", "integer", "boolean" };
 
 SymbolTable	*
