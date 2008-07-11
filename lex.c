@@ -34,8 +34,7 @@ const char     *literals[] = {
 };
 
 static int      line = 1, column = 1;
-static char     char_buf[32];
-static int      char_buf_rp = 0, char_buf_wp = 0;
+static GSList	*char_buf = NULL;
 
 static TokenList *match_program(void);
 static TokenList *match_block(void);
@@ -70,26 +69,27 @@ static void     lex_error2(char *message, char *arg);
 static void
 char_buf_put(char ch)
 {
-	int             wp = (char_buf_wp + 1) % 32;
-
-	if (wp != char_buf_rp) {
-		char_buf[char_buf_wp] = ch;
-		char_buf_wp = wp;
-	} else {
-		lex_error("buffer full");
-	}
+	char_buf = g_slist_prepend(char_buf, GINT_TO_POINTER((gint)ch));
 }
 
 static int
 char_buf_get(void)
 {
-	int             ch = -1;
+	if (char_buf == NULL) {
+		return -1;
+	} else {
+		int ch;
+	    GSList *next;
 
-	if (char_buf_rp != char_buf_wp) {
-		ch = char_buf[char_buf_rp];
-		char_buf_rp = (char_buf_rp + 1) % 32;
-	}
-	return ch;
+		ch = GPOINTER_TO_INT(char_buf->data);
+
+		next = char_buf->next;
+		g_slist_free_1(char_buf);
+
+		char_buf = next;
+
+		return ch;	
+	}	
 }
 
 static void
@@ -109,18 +109,18 @@ lex_error2(char *message, char *arg)
 static int
 get_character(void)
 {
-	int             ch = char_buf_get();
+	int ch = char_buf_get();
 
 	if (ch == -1)
 		ch = getchar();
-	
+		
 	if (ch == '\n') {
 		line++;
 		column = 1;
 	} else {
 		column++;
 	}
-	
+		
 	return ch;
 }
 
@@ -173,9 +173,12 @@ unget_character(char ch)
 static void
 unget_string(char *string)
 {
-	while (*string) {
-		unget_character(*string++);
-	}
+	GSList *temp = NULL;
+	
+	while (*string)
+		temp = g_slist_append(temp, GINT_TO_POINTER((gint)*string++));
+
+	char_buf = g_slist_concat(temp, char_buf);
 }
 
 static void
@@ -244,37 +247,44 @@ match_token(TokenType token_type)
 	char            buffer[128], ch;
 	int             index = 0;
 	const char     *literal = literals[token_type];
-
-	buffer[0] = '\0';
-
-	for (ch = get_character_notblank(); !strchr("\t\n\r ", ch); ch = get_character()) {
-		buffer[index++] = ch;
-		buffer[index] = '\0';
-
-		if (strcmp(literal, buffer) == 0) {
-			token = g_new0(Token, 1);
-			token->type = token_type;
-			token->id = (char *) literal;
-			token->line = line;
-			token->column = column - index - 1; /* point to start of token */
-
-			token_list = g_new0(TokenList, 1);
-			token_list->tokens = g_list_append(token_list->tokens, token);
-
-			return token_list;
-		} else if (strncmp(literal, buffer, index - 1) != 0) {
-			for (ch = char_buf_get(); ch != -1; ch = char_buf_get()) {
-				buffer[index++] = ch;
-				buffer[index] = '\0';
-			}
-
-			unget_string(buffer);
-
-			return NULL;
+	
+	ch = get_character_notblank();
+	if (ch != *literal) {
+		unget_character(ch);
+		return NULL;
+	}
+	
+	buffer[index++] = ch;
+	literal++;
+	
+	while (*literal) {
+		ch = get_character();
+		
+		if (ch == *literal) {
+			buffer[index++] = ch;
+			literal++;
+		} else {
+			unget_character(ch);
+			break;
 		}
 	}
 
+	if (*literal == '\0') {
+		token = g_new0(Token, 1);
+		token->type = token_type;
+		token->id = (gchar*) literals[token_type];
+		token->line = line;
+		token->column = column - index - 1;
+		
+		token_list = g_new0(TokenList, 1);
+		token_list->tokens = g_list_append(token_list->tokens, token);
+
+		return token_list;		
+	}
+	
+	buffer[index] = '\0';
 	unget_string(buffer);
+	
 	return NULL;
 }
 
@@ -788,6 +798,7 @@ match_term(void)
 	return NULL;
 }
 
+
 /*
  * <fator> ::= (<variavel>|<numero>|<chamada_funcao>|( <expressao>
  * )|verdadeiro|falso|nao <fator>)
@@ -814,6 +825,7 @@ match_factor(void)
 		tl_add_token(&tl, match_factor_req());
 	} else {
 		tl_destroy(tl);
+		
 		return NULL;
 	}
 
@@ -857,46 +869,44 @@ match_identifier(void)
 	char            buffer[128], ch;
 	int             index = 0;
 
-	if ((ch = get_character_notblank()) && isalpha(ch)) {
+	ch = get_character_notblank();
+	if (isalpha(ch)) {
 		buffer[index++] = ch;
-
-		do {
+		
+		while (1) {
 			ch = get_character();
-			if (isalnum(ch) || ch == '_') {
+			if (isalpha(ch) || isdigit(ch) || ch == '_') {
 				buffer[index++] = ch;
 			} else {
 				unget_character(ch);
-
 				buffer[index] = '\0';
+				
 				break;
 			}
-		} while (1);
-
-		if (reserved_token(buffer)) {
-			goto unget;
 		}
-		t = g_new0(Token, 1);
-		t->type = T_IDENTIFIER;
-		t->id = strdup(buffer);
-		t->line = line;
-		t->column = column - index - 1; /* point to start of token */
+		
+		if (index) {
+			if (reserved_token(buffer)) {
+				unget_string(buffer);
+				return NULL;
+			}
 
-		tl = tl_new();
-		tl->tokens = g_list_append(tl->tokens, t);
+			t = g_new0(Token, 1);
+			t->type = T_IDENTIFIER;
+			t->id = strdup(buffer);
+			t->line = line;
+			t->column = column - index - 1; /* point to start of token */
 
-		return tl;
+			tl = tl_new();
+			tl->tokens = g_list_append(tl->tokens, t);
+
+			return tl;		
+		} else {
+			return NULL;
+		}
 	}
-	buffer[index++] = ch;
-	buffer[index] = '\0';
-
-unget:
-	for (ch = char_buf_get(); ch != -1; ch = char_buf_get()) {
-		buffer[index++] = ch;
-		buffer[index] = '\0';
-	}
-
-	unget_string(buffer);
-
+	
+	unget_character(ch);
 	return NULL;
 }
 
@@ -908,30 +918,41 @@ match_number(void)
 	TokenList      *tl;
 	char            buffer[128], ch;
 	int             index = 0;
+	
+	ch = get_character_notblank();
+	if (isdigit(ch)) {
+		buffer[index++] = ch;
+		
+		while (1) {
+			ch = get_character();
+			if (isdigit(ch)) {
+				buffer[index++] = ch;
+			} else {
+				unget_character(ch);
+				buffer[index] = '\0';
+				
+				break;
+			}
+		}
+		
+		if (index) {
+			tl = tl_new();
 
-	for (ch = get_character_notblank();; ch = get_character()) {
-		if (isdigit(ch)) {
-			buffer[index++] = ch;
+			t = g_new0(Token, 1);
+			t->type = T_NUMBER;
+			t->id = strdup(buffer);
+			t->line = line;
+			t->column = column;
+
+			tl->tokens = g_list_append(tl->tokens, t);
+
+			return tl;			
 		} else {
-			unget_character(ch);
-			buffer[index] = '\0';
-			break;
+			return NULL;
 		}
 	}
-
-	if (index) {
-		tl = tl_new();
-
-		t = g_new0(Token, 1);
-		t->type = T_NUMBER;
-		t->id = strdup(buffer);
-		t->line = line;
-		t->column = column;
-
-		tl->tokens = g_list_append(tl->tokens, t);
-
-		return tl;
-	}
+	
+	unget_character(ch);
 	return NULL;
 }
 
