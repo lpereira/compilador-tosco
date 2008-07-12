@@ -65,22 +65,6 @@ static TokenList *match_number(void);
 static void     lex_error(char *message);
 static void     lex_error2(char *message, char *arg);
 
-
-
-static void
-dumpbuf()
-{
-	GSList *l;
-	
-	printf("dumpbuf() -> ");
-	
-	for (l = char_buf; l; l = l->next) {
-		printf("[%c] ", (gchar)GPOINTER_TO_INT(l->data));
-	}
-	
-	printf("\n");
-}
-
 static void
 char_buf_put(char ch)
 {
@@ -90,10 +74,8 @@ char_buf_put(char ch)
 static int
 char_buf_get(void)
 {
-	dumpbuf();
-
 	if (char_buf == NULL) {
-		return -1;
+		return getchar();
 	} else {
 		int ch;
 	    GSList *next;
@@ -128,9 +110,6 @@ get_character(void)
 {
 	int ch = char_buf_get();
 
-	if (ch == -1)
-		ch = getchar();
-		
 	if (ch == '\n') {
 		line++;
 		column = 1;
@@ -138,40 +117,11 @@ get_character(void)
 		column++;
 	}
 	
-	printf("get_character() = %d [%c]\n", ch, ch);
-	
-	return ch;
-}
-
-static int
-get_character_notblank(void)
-{
-	char            ch;
-
-	do {
-		ch = get_character();
-		
-		printf("get_character_not_blank(%c)\n", ch);
-
-		/* eat comments */
-		if (ch == '{') {
-			while (1) {
-				ch = get_character();
-				if (ch == '}')
-					break;
-				else if (ch == EOF)
-					lex_error("Expecting: }");
-			}
-
-			ch = get_character();
-		}
-	} while (isspace(ch));
-
 	return ch;
 }
 
 static void
-_unget_character(char ch)
+unget_character(char ch)
 {
 	if (ch == -1)
 		return;
@@ -189,17 +139,10 @@ _unget_character(char ch)
 					 */
 
 	char_buf_put(ch);
-	dumpbuf();	
 }
 
-#define unget_character(S) \
- { \
-	printf("unget character called by fn %s, line %d, char=[%c]\n", __FUNCTION__, __LINE__, S); \
-	_unget_character(S); \
- }
-
 static void
-_unget_string(char *string)
+unget_string(char *string)
 {
 	GSList *temp = NULL;
 	
@@ -209,11 +152,30 @@ _unget_string(char *string)
 	char_buf = g_slist_concat(temp, char_buf);
 }
 
-#define unget_string(S) \
- { \
-	printf("unget string called by fn %s, line %d, string=[%s]\n", __FUNCTION__, __LINE__, S); \
-	_unget_string(S); \
- }
+static int
+get_character_notblank(void)
+{
+	char            ch;
+	
+	do {
+		ch = get_character();
+		
+		/* eat comments */
+		if (ch == '{') {
+			while (1) {
+				ch = get_character();
+				if (ch == '}')
+					break;
+				else if (ch == EOF)
+					lex_error("Expecting: }");
+			}
+
+			ch = get_character();
+		}		
+	} while (isspace(ch));
+
+	return ch;
+}
 
 static void
 unget_tokenlist(TokenList * tl)
@@ -282,13 +244,34 @@ match_token(TokenType token_type)
 	int             index = 0;
 	const char     *literal = literals[token_type];
 	
-	printf("match_token(\"%s\")\n", literal);
-	
+/*
 	ch = get_character_notblank();
 	if (ch != *literal) {
 		unget_character(ch);
+			
 		return NULL;
 	}
+*/
+
+	/*
+	 * isso nao ta legal, pq pode ter comentario aqui... o _notblank garantia q nao teria comentario
+	 */
+	gboolean last_was_space = FALSE;
+	ch = get_character();
+	do {
+		if (isspace(ch)) {
+			last_was_space = TRUE;
+			ch = get_character();
+		} else {
+			if (ch != *literal) {
+				unget_character(ch);
+				if (last_was_space)
+					unget_character(' ');
+				return NULL;
+			}
+			break;
+		}
+	} while(1);
 	
 	buffer[index++] = ch;
 	literal++;
@@ -315,17 +298,11 @@ match_token(TokenType token_type)
 		token_list = g_new0(TokenList, 1);
 		token_list->tokens = g_list_append(token_list->tokens, token);
 
-		puts(token->id);
-
 		return token_list;		
 	}
 	
-	if (index == 1) {
-		unget_character(buffer[0]);
-	} else {
-		buffer[index] = '\0';
-		unget_string(buffer);
-	}
+	buffer[index] = '\0';
+	unget_string(buffer);
 	
 	return NULL;
 }
@@ -568,8 +545,6 @@ match_commands(void)
 	if ((t = match_token(T_BEGIN))) {
 		tl = tl_new();
 
-		puts("achei um begin");
-
 		tl_add_token(&tl, t);
 		tl_add_token(&tl, match_command_req());
 
@@ -668,18 +643,11 @@ match_conditional(void)
 		tl_add_token(&tl, match_expression_req());
 		tl_add_token(&tl, match_token_req(T_THEN));
 		
-		puts("vou procurar um comando");
 		tl_add_token(&tl, match_command_req());
-		puts("achei o comando");
 		
-		puts("vou procurar o else");
 		if ((t = match_token(T_ELSE))) {
-			puts("achei");
 			tl_add_token(&tl, t);
 			tl_add_token(&tl, match_command_req());
-		} else {
-			dumpbuf();
-			puts("nao achei");
 		}
 		return tl;
 	}
@@ -750,7 +718,7 @@ static TokenList      *
 match_expression(void)
 {
 	TokenList      *tl, *t;
-	gboolean		started_with_paren = FALSE;
+	gboolean	started_with_paren = FALSE;
 
 	tl = tl_new();
 	
@@ -937,8 +905,6 @@ match_identifier(void)
 
 		tl = tl_new();
 		tl->tokens = g_list_append(tl->tokens, t);
-
-		printf("identifier found: %s\n", t->id);
 
 		return tl;		
 	}
