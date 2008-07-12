@@ -171,7 +171,7 @@ get_character_notblank(void)
 }
 
 static void
-unget_character(char ch)
+_unget_character(char ch)
 {
 	if (ch == -1)
 		return;
@@ -189,13 +189,17 @@ unget_character(char ch)
 					 */
 
 	char_buf_put(ch);
-	printf("unget_character(%d, '%c')\n", ch, ch);
-	dumpbuf();
-	
+	dumpbuf();	
 }
 
+#define unget_character(S) \
+ { \
+	printf("unget character called by fn %s, line %d, char=[%c]\n", __FUNCTION__, __LINE__, S); \
+	_unget_character(S); \
+ }
+
 static void
-unget_string(char *string)
+_unget_string(char *string)
 {
 	GSList *temp = NULL;
 	
@@ -204,6 +208,12 @@ unget_string(char *string)
 
 	char_buf = g_slist_concat(temp, char_buf);
 }
+
+#define unget_string(S) \
+ { \
+	printf("unget string called by fn %s, line %d, string=[%s]\n", __FUNCTION__, __LINE__, S); \
+	_unget_string(S); \
+ }
 
 static void
 unget_tokenlist(TokenList * tl)
@@ -272,6 +282,8 @@ match_token(TokenType token_type)
 	int             index = 0;
 	const char     *literal = literals[token_type];
 	
+	printf("match_token(\"%s\")\n", literal);
+	
 	ch = get_character_notblank();
 	if (ch != *literal) {
 		unget_character(ch);
@@ -308,8 +320,12 @@ match_token(TokenType token_type)
 		return token_list;		
 	}
 	
-	buffer[index] = '\0';
-	unget_string(buffer);
+	if (index == 1) {
+		unget_character(buffer[0]);
+	} else {
+		buffer[index] = '\0';
+		unget_string(buffer);
+	}
 	
 	return NULL;
 }
@@ -636,14 +652,7 @@ match_attrib(void)
 static TokenList      *
 match_procedure_call(void)
 {
-	TokenList *t;
-	
-	t = match_identifier();
-	if (t) {
-		SUPPRESS(match_token(T_SEMICOLON));
-		return t;
-	}
-	return NULL;
+	return match_identifier();
 }
 
 /* <cmd_condicional> ::= se <expressao> entao <comando> [senao <comando>] */
