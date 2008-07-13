@@ -61,8 +61,7 @@ static TokenList *match_function_call(void);
 static TokenList *match_identifier(void);
 static TokenList *match_number(void);
 
-static void     lex_error(char *message);
-static void     lex_error2(char *message, char *arg);
+static void     lex_error(char *message, ...);
 
 static void
 char_buf_put(char ch)
@@ -91,16 +90,18 @@ char_buf_get(void)
 }
 
 static void
-lex_error(char *message)
+lex_error(char *message, ...)
 {
-	printf("Error: Line %d, column %d: %s\n", line, column, message);
-	exit(1);
-}
-
-static void
-lex_error2(char *message, char *arg)
-{
-	printf("Error: Line %d, column %d: %s%s\n", line, column, message, arg);
+	gchar *buffer;
+	va_list args;
+	
+	va_start(args, message);
+	buffer = g_strdup_vprintf(message, args);
+	va_end(args);
+	
+	printf("Error: Line %d, column %d: %s\n", line, column, buffer);
+	
+	g_free(buffer);
 	exit(1);
 }
 
@@ -323,7 +324,7 @@ match_token_req(TokenType token_type)
 		return token_list;
 	}
 	
-	lex_error2("expecting: ", (char *) literals[token_type]);
+	lex_error("expecting: %s", (char *) literals[token_type]);
 
 	/* make compiler happy */
 	return NULL;
@@ -333,7 +334,7 @@ match_token_req(TokenType token_type)
   static TokenList * matcher##_req(void) {		\
     TokenList *tl = matcher();					\
     if (tl == NULL) {							\
-      lex_error("expecting: " err);				\
+      lex_error("expecting: %s", err);			\
     }											\
     return tl;									\
   }

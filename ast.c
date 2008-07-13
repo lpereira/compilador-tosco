@@ -25,21 +25,31 @@
 #include "stack.h"
 #include "symbol-table.h"
 
-void            __ast_recursive(GNode * root, GList ** token_list, TokenType end_with);
-void inline     ast_recursive(GNode * root, GList ** token_list);
-void inline     ast_recursive_stmt(GNode * root, GList ** token_list);
+static void            __ast_recursive(GNode * root, GList ** token_list, TokenType end_with);
+static void inline     ast_recursive(GNode * root, GList ** token_list);
+static void inline     ast_recursive_stmt(GNode * root, GList ** token_list);
 
 static SymbolTable *symbol_table;
 
 static void
-ast_error_token(Token *token, gchar *message)
+ast_error_token(Token *token, gchar *message, ...)
 {
+	gchar *buffer;
+	va_list args;
+	
+	va_start(args, message);
+	buffer = g_strdup_vprintf(message, args);
+	va_end(args);
+	
 	g_print("Error: line %d, column %d, token ``%s'': %s\n",
-			token->line, token->column, token->id, message);
+			token->line, token->column, token->id, buffer);
+	
+	g_free(buffer);
+	
 	exit(1);
 }
 
-ASTNode        *
+static ASTNode        *
 ast_node_new(TokenType token, gpointer data)
 {
 	ASTNode        *node;
@@ -51,7 +61,7 @@ ast_node_new(TokenType token, gpointer data)
 	return node;
 }
 
-void
+static void
 ast_var(GNode * root, GList ** tokens)
 {
 	GNode          *var_root, *var_type_root;
@@ -103,7 +113,7 @@ ast_var(GNode * root, GList ** tokens)
 	}
 }
 
-void
+static void
 ast_function(GNode * root, GList ** tokens)
 {
 	GNode          *func_node;
@@ -144,7 +154,7 @@ ast_function(GNode * root, GList ** tokens)
 	symbol_table_pop_context(symbol_table);
 }
 
-void
+static void
 ast_procedure(GNode * root, GList ** tokens)
 {
 	GNode          *proc_node;
@@ -210,7 +220,7 @@ __op_priority(TokenType op)
 	return 0;
 }
 
-TokenType inline
+static TokenType inline
 ast_node_token(GNode * node)
 {
 	ASTNode        *ast_node;
@@ -233,7 +243,7 @@ pop_connect_push(Stack * op_stack, Stack * node_stack)
 	stack_push(node_stack, temp);
 }
 
-void
+static void
 ast_expression(GNode * root, GList ** tokens, TokenType stop)
 {
 	Token          *token;
@@ -326,7 +336,7 @@ ast_expression(GNode * root, GList ** tokens, TokenType stop)
 	stack_free(node_stack);
 }
 
-void
+static void
 ast_attrib(GNode * root, GList ** tokens)
 {
 	Token          *token;
@@ -356,7 +366,7 @@ ast_attrib(GNode * root, GList ** tokens)
 	}
 }
 
-void
+static void
 ast_else(GNode * root, GList ** tokens)
 {
 	Token          *token;
@@ -378,7 +388,7 @@ ast_else(GNode * root, GList ** tokens)
 	}
 }
 
-void
+static void
 ast_if(GNode * root, GList ** tokens)
 {
 	Token          *token;
@@ -405,7 +415,7 @@ ast_if(GNode * root, GList ** tokens)
 	}
 }
 
-void
+static void
 ast_while(GNode * root, GList ** tokens)
 {
 	GNode          *while_node;
@@ -417,7 +427,7 @@ ast_while(GNode * root, GList ** tokens)
 	ast_recursive_stmt(while_node, tokens);
 }
 
-void
+static void
 ast_read(GNode * root, GList ** tokens)
 {
 	Token          *token;
@@ -444,7 +454,7 @@ ast_read(GNode * root, GList ** tokens)
 	*tokens = (*tokens)->next;	/* skip T_IDENTIFIER */
 }
 
-void
+static void
 ast_write(GNode * root, GList ** tokens)
 {
 	Token          *token;
@@ -471,7 +481,7 @@ ast_write(GNode * root, GList ** tokens)
 	*tokens = (*tokens)->next;	/* skip T_IDENTIFIER */
 }
 
-void
+static void
 ast_identifier(GNode *root, GList **tokens)
 {
 	Token *token, *prev_token;
@@ -506,7 +516,7 @@ ast_identifier(GNode *root, GList **tokens)
 	}
 }
 
-void
+static void
 ast_begin(GNode * root, GList ** tokens)
 {
 	*tokens = (*tokens)->next;
@@ -514,19 +524,19 @@ ast_begin(GNode * root, GList ** tokens)
 	ast_recursive(root, tokens);
 }
 
-void            inline
+static void inline
 ast_recursive_stmt(GNode * root, GList ** token_list)
 {
 	__ast_recursive(root, token_list, T_SEMICOLON);
 }
 
-void            inline
+static void inline
 ast_recursive(GNode * root, GList ** token_list)
 {
 	__ast_recursive(root, token_list, T_END);
 }
 
-void
+static void
 __ast_recursive(GNode * root, GList ** token_list, TokenType end_with)
 {
 	Token          *token;
