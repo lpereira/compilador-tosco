@@ -8,7 +8,6 @@
 /*
  * FIXME: programx fica com dois tokens: program x
  * FIXME: beginx:=10end usa 5 tokens: begin, x, :=, 10, end
- * FIXME: if/else tah meio zoado...
  * FIXME: operadores unarios!
  */
 #include <string.h>
@@ -595,10 +594,39 @@ match_command(void)
 static TokenList      *
 match_attrib_call(void)
 {
+	Token	       *token;
 	TokenList      *t;
 
 	if ((t = match_attrib()) ||
 	    (t = match_procedure_call())) {
+	    	/*
+	    	FIXME: This hack should go away ASAP; it's needed for statements like:
+	    	
+			if condition then
+				do_thing
+			else
+				do_another_thing;
+		
+		They won't be processed properly in ast.c, because on a if block, if there's 
+		no begin token, it'll wait for a semicolon.
+		
+		It'll silently ignore the else block, but will include both do_thing and
+		do_another_thing, thus passing a wrong AST to the code generator.
+		
+		This hack inserts an artificial semicolon when we do have either an attribution
+		with a expression of a procedure call; but we get two chained ';' for statements
+		outside an if block, which is undesired -- although the things in ast.c will
+		gladly ignore them, I am not exactly happy with it. -- Leandro
+		*/
+				
+		token = g_new0(Token, 1);
+		token->type = T_SEMICOLON;
+		token->id = ";";
+		token->line = line;
+		token->column = column;
+		
+		t->tokens = g_list_append(t->tokens, token);
+	    
 		return t;
 	}
 	return NULL;

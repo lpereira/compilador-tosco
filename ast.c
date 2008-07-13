@@ -10,6 +10,7 @@
 /*
  * TODO: - nome_de_funcao := retorno tem que ser validado (nao eh possivel retornar de uma funcao que nao a atual!)
  *         tambem nao deve ser possivel retornar valor de procedimento
+ *       - outros TODO e FIXME perdidos no codigo
  */
 
 #include <string.h>
