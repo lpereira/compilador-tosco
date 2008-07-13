@@ -604,12 +604,42 @@ ast(TokenList * token_list)
 gboolean
 traverse_func(GNode * node, gpointer data)
 {
-	if (node->parent) {
-		ASTNode        *ast_node = (ASTNode *) node->data, *ast_parent = (ASTNode *) node->parent->data;
+	static GHashTable *t = NULL;
+	static gint count = 0;
+	
+	if (!t) {
+		t = g_hash_table_new(NULL, g_int_equal);
+	}
 
-		printf("\t\"%s %s (%p)\" -> \"%s %s (%p)\";\n",
-		       literals[ast_parent->token], (char *) ast_parent->data, node->parent,
-		  literals[ast_node->token], (char *) ast_node->data, node);
+	if (node->parent) {
+		ASTNode *ast_node = (ASTNode *) node->data, *ast_parent = (ASTNode *) node->parent->data;
+		gchar *data1, *data2;
+		gint lbl1, lbl2;
+		gpointer lbl_ptr;
+		
+		if ((lbl_ptr = g_hash_table_lookup(t, node->parent))) {
+			lbl1 = GPOINTER_TO_INT(lbl_ptr);
+		} else {
+			g_hash_table_insert(t, node->parent, GINT_TO_POINTER(++count));
+			lbl1 = count;
+		}
+
+		if ((lbl_ptr = g_hash_table_lookup(t, node))) {
+			lbl2 = GPOINTER_TO_INT(lbl_ptr);
+		} else {
+			g_hash_table_insert(t, node, GINT_TO_POINTER(++count));
+			lbl2 = count;
+		}
+		
+		data1 = (ast_parent->data) ? (gchar *)ast_parent->data : "";
+		data2 = (ast_node->data)   ? (gchar *)ast_node->data   : "";
+		
+		data1 = g_str_equal(data1, literals[ast_parent->token]) ? "" : data1;
+		data2 = g_str_equal(data2, literals[ast_node->token]) ? "" : data2;
+		
+		printf("\t\"%s %s (%d)\" -> \"%s %s (%d)\";\n",
+		       literals[ast_parent->token], data1, lbl1,
+		       literals[ast_node->token],   data2, lbl2);
 	}
 	return FALSE;
 }
