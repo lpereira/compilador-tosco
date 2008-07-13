@@ -145,9 +145,19 @@ static void
 unget_string(char *string)
 {
 	GSList *temp = NULL;
+	char ch;
 	
-	while (*string)
-		temp = g_slist_append(temp, GINT_TO_POINTER((gint)*string++));
+	while (*string) {
+		ch = *string++;
+		
+		temp = g_slist_append(temp, GINT_TO_POINTER((gint)ch));
+		
+		if (--column <= 0)
+			column = 1;
+		
+		if (ch == '\n')
+			line--;
+	}
 
 	char_buf = g_slist_concat(temp, char_buf);
 }
@@ -171,7 +181,7 @@ is_digit(int ch, gpointer user_data)
 }
 
 static int
-wait_for_nonblank_character(int (*condition_func)(int, gpointer), gpointer user_data)
+eat_whitespace_until(int (*condition_func)(int, gpointer), gpointer user_data)
 {
 	int ch;
 	gboolean last_was_space = FALSE;
@@ -276,8 +286,8 @@ match_token(TokenType token_type)
 	int             index = 0;
 	const char     *literal = literals[token_type];
 	
-	ch = wait_for_nonblank_character(is_desired_char,
-					 GINT_TO_POINTER((gint)*literal));
+	ch = eat_whitespace_until(is_desired_char,
+				  GINT_TO_POINTER((gint)*literal));
 	if (ch == -1)
 		return NULL;
 	
@@ -914,7 +924,7 @@ match_identifier(void)
 	char            buffer[128], ch;
 	int             index = 0;
 
-	ch = wait_for_nonblank_character(is_alpha, NULL);
+	ch = eat_whitespace_until(is_alpha, NULL);
 	if (ch == -1) {
 		return NULL;
 	} else {
@@ -959,7 +969,7 @@ match_number(void)
 	char            buffer[128], ch;
 	int             index = 0;
 	
-	ch = wait_for_nonblank_character(is_digit, NULL);
+	ch = eat_whitespace_until(is_digit, NULL);
 	if (ch == -1) {
 		return NULL;
 	} else {

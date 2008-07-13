@@ -8,8 +8,8 @@ var
 begin
 	teste := 5 * x;
 	
-	if teste > 100 then test_function := teste + 1;
-	test_function := teste - 1;
+	if teste > 100 then test_function := teste + 1
+	else test_function := teste - 1;
 end;
 
 begin
