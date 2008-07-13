@@ -16,6 +16,7 @@
  *  - temp_new/temp_unref. is this sane?
  *  - unary operations are not supported (support must come right from the lex)
  *  - free global variables memory
+ *  - mp will not work on recursive functions!
  */
 
 #include <string.h>
@@ -291,7 +292,7 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	temp_zero();
 	
 	printf("\tgoto label%d\n", l);
-	printf("\n%s@%d:\n", (gchar *)ast_node->data, r);
+	printf("\n_%d_%s:\n", r, (gchar *)ast_node->data);
 	
 	symbol_table_install(symbol_table, (gchar *)ast_node->data,
 						 procedure ? ST_PROCEDURE : ST_FUNCTION, SK_NONE);
@@ -373,7 +374,7 @@ generate_procedure_call(GNode *node)
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 
 	context_save(-1);
-	printf("\tcall %s@%d\n", (gchar *)ast_node->data, label);
+	printf("\tcall _%d_%s\n", label, (gchar *)ast_node->data);
 	context_restore(-1);
 
 	return 0;
@@ -395,7 +396,7 @@ generate_function_call(GNode *node)
 
 	r = temp_new();
 	context_save(r);
-	printf("\tcall %s@%d\n", (gchar *)ast_node->data, label);
+	printf("\tcall _%d_%s\n", label, (gchar *)ast_node->data);
 	context_restore(r);
 
 	printf("\tt%d := tr\n", r);

@@ -578,14 +578,15 @@ match_command(void)
 {
 	TokenList      *t;
 
-	if ((t = match_attrib_call())) return t;
-	else if ((t = match_conditional())) return t;
-	else if ((t = match_while())) return t;
-	else if ((t = match_read())) return t;
-	else if ((t = match_write())) return t;
-	else if ((t = match_commands())) return t;
-	else if ((t = match_function_declare())) return t;
-	else if ((t = match_procedure_declare())) return t;	/* FIXME: mover esses dois pra match_commands()? */
+	if ((t = match_attrib_call()) ||
+	    (t = match_conditional()) ||
+	    (t = match_while()) ||
+	    (t = match_read()) ||
+	    (t = match_write()) ||
+	    (t = match_commands()) ||
+	    (t = match_function_declare()) ||
+	    (t = match_procedure_declare()))
+	    return t;	/* FIXME: mover esses dois pra match_commands()? */
 
 	return NULL;
 }
