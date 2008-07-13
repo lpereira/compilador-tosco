@@ -153,15 +153,35 @@ unget_string(char *string)
 }
 
 static int
-get_character_notblank(void)
+is_desired_char(int ch, gpointer user_data)
 {
-	char            ch;
-	
-	do {
-		ch = get_character();
-		
-		/* eat comments */
-		if (ch == '{') {
+	return ch == GPOINTER_TO_INT(user_data);
+}
+
+static int
+is_alpha(int ch, gpointer user_data)
+{
+	return isalpha(ch);
+}
+
+static int
+is_digit(int ch, gpointer user_data)
+{
+	return isdigit(ch);
+}
+
+static int
+wait_for_nonblank_character(int (*condition_func)(int, gpointer), gpointer user_data)
+{
+	int ch;
+	gboolean last_was_space = FALSE;
+
+	ch = get_character();
+
+	while (1) {
+		if (ch == '{') {		/* eat comments */
+			last_was_space = FALSE;
+			
 			while (1) {
 				ch = get_character();
 				if (ch == '}')
@@ -171,10 +191,22 @@ get_character_notblank(void)
 			}
 
 			ch = get_character();
-		}		
-	} while (isspace(ch));
-
-	return ch;
+		} else if (isspace(ch)) {	/* eat spaces */
+			last_was_space = TRUE;
+			
+			ch = get_character();
+		} else {			/* might be what we're looking for */
+			if (condition_func && !condition_func(ch, user_data)) {
+				unget_character(ch);
+				
+				if (last_was_space)
+					unget_character(' ');
+				return -1;
+			}
+			
+			return ch;
+		}
+	}
 }
 
 static void
@@ -244,34 +276,10 @@ match_token(TokenType token_type)
 	int             index = 0;
 	const char     *literal = literals[token_type];
 	
-/*
-	ch = get_character_notblank();
-	if (ch != *literal) {
-		unget_character(ch);
-			
+	ch = wait_for_nonblank_character(is_desired_char,
+					 GINT_TO_POINTER((gint)*literal));
+	if (ch == -1)
 		return NULL;
-	}
-*/
-
-	/*
-	 * isso nao ta legal, pq pode ter comentario aqui... o _notblank garantia q nao teria comentario
-	 */
-	gboolean last_was_space = FALSE;
-	ch = get_character();
-	do {
-		if (isspace(ch)) {
-			last_was_space = TRUE;
-			ch = get_character();
-		} else {
-			if (ch != *literal) {
-				unget_character(ch);
-				if (last_was_space)
-					unget_character(' ');
-				return NULL;
-			}
-			break;
-		}
-	} while(1);
 	
 	buffer[index++] = ch;
 	literal++;
@@ -876,8 +884,10 @@ match_identifier(void)
 	char            buffer[128], ch;
 	int             index = 0;
 
-	ch = get_character_notblank();
-	if (isalpha(ch)) {
+	ch = wait_for_nonblank_character(is_alpha, NULL);
+	if (ch == -1) {
+		return NULL;
+	} else {
 		buffer[index++] = ch;
 		
 		while (1) {
@@ -908,9 +918,6 @@ match_identifier(void)
 
 		return tl;		
 	}
-	
-	unget_character(ch);
-	return NULL;
 }
 
 /* <numero> ::= <digito> {<digito>} */
@@ -922,8 +929,10 @@ match_number(void)
 	char            buffer[128], ch;
 	int             index = 0;
 	
-	ch = get_character_notblank();
-	if (isdigit(ch)) {
+	ch = wait_for_nonblank_character(is_digit, NULL);
+	if (ch == -1) {
+		return NULL;
+	} else {
 		buffer[index++] = ch;
 		
 		while (1) {
@@ -950,9 +959,6 @@ match_number(void)
 
 		return tl;			
 	}
-	
-	unget_character(ch);
-	return NULL;
 }
 
 TokenList      *
