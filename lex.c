@@ -340,16 +340,16 @@ match_token_req(TokenType token_type)
 	return NULL;
 }
 
-#define REQ(matcher,err)						\
+#define REQ(matcher,err)				\
   static TokenList * matcher##_req(void) {		\
-    TokenList *tl = matcher();					\
-    if (tl == NULL) {							\
+    TokenList *tl = matcher();				\
+    if (tl == NULL) {					\
       lex_error("expecting: %s", err);			\
     }											\
     return tl;									\
   }
 
-#define SUPPRESS(match_function)				\
+#define SUPPRESS(match_function)			\
   tl_unref(match_function)
 
 
