@@ -484,7 +484,7 @@ ast_identifier(GNode *root, GList **tokens)
 			*tokens = (*tokens)->next;
 			token = (Token *)(*tokens)->data;
 			
-			if (token->type != T_SEMICOLON)
+			if (token->type == T_ATTRIB)
 				ast_error_token(prev_token, "cannot assign to a procedure");
 		
 			g_node_append(root, g_node_new(ast_node_new(T_PROCEDURE_CALL, symbol)));

@@ -29,25 +29,7 @@ begin
 }
 
 { mas isso causa (e nao deveria!) }
-  if resto = 0 then
-  
-  
-  
-  
-                                 p
-  
-  
-  
-  
-  
-   else 
-   
-   
-   
-   
-   
-   
-   q;
+  if resto = 0 then p else q;
 
   write(v);
 end.
