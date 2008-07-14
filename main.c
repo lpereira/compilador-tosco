@@ -14,6 +14,9 @@
 #include "symbol-table.h"
 #include "stack.h"
 
+#define CALCTIME(start,end) 	((end.tv_sec - start.tv_sec) + ((end.tv_usec - start.tv_usec) / 1e6))
+#define CALCPERC(t)		(100.0f * t) / time_total
+
 typedef struct _Params	Params;
 struct _Params {
 	gboolean test_parser,
@@ -99,9 +102,9 @@ main(int argc, char **argv)
 {
 	GNode          *root;
 	TokenList      *token_list;
-	struct timeval	tv_start, tv_lex, tv_ast, tv_codegen;
-	gdouble		time_lex, time_ast, time_codegen, time_total;
-	gdouble		p_lex, p_ast, p_codegen, p_total;
+	struct timeval	tv_start, tv_lex, tv_ast, tv_codegen, tv_opt1, tv_opt2;
+	gdouble		time_lex, time_ast, time_codegen, time_total, time_opt1, time_opt2;
+	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1, p_opt2;
 	GOptionContext *ctx;
 	
 	ctx = g_option_context_new("- Toy Pascal-ish Compiler");
@@ -109,6 +112,13 @@ main(int argc, char **argv)
 	g_option_context_add_main_entries(ctx, cmdline_options, NULL);
 	g_option_context_parse(ctx, &argc, &argv, NULL);
 	g_option_context_free(ctx);
+	
+	if (params.input_file) {
+	
+	} else {
+		show_usage(argv[0]);
+		return 0;
+	}
 	
 	if (params.test_parser) {
 		return lex_test_main(argc, argv);
@@ -122,11 +132,6 @@ main(int argc, char **argv)
 		return codegen_test_main(argc, argv);
 	}
 
-	if (!params.input_file) {
-		show_usage(argv[0]);
-		return 0;
-	}
-
 	gettimeofday(&tv_start, NULL);
 	
 	token_list = lex();
@@ -137,6 +142,7 @@ main(int argc, char **argv)
 	
 	if (params.optimization_level & 1) {
 		/* do the first-level optimization thing */
+		gettimeofday(&tv_opt1, NULL);
 	}
 
 	codegen(root);
@@ -144,32 +150,60 @@ main(int argc, char **argv)
 	
 	if (params.optimization_level & 2) {
 		/* do the second-level optimization thing */
+		gettimeofday(&tv_opt2, NULL);
 	}
 
 	tl_destroy(token_list);
-
 	
 	if (params.show_time) {
-#define CALCTIME(start,end)  \
-	((end.tv_sec - start.tv_sec) + ((end.tv_usec - start.tv_usec) / 1e6))
 		time_lex = CALCTIME(tv_start, tv_lex);
 		time_ast = CALCTIME(tv_lex, tv_ast);
-		time_codegen = CALCTIME(tv_ast, tv_codegen);
-#undef CALCTIME
-
-		time_total = time_lex + time_ast + time_codegen;
-
-		p_lex = (100.0f * time_lex) / time_total;
-		p_ast = (100.0f * time_ast) / time_total;
-		p_codegen = (100.0f * time_codegen) / time_total;
 		
+		if (params.optimization_level & 1) {
+			time_opt1 = CALCTIME(tv_ast, tv_opt1);
+			time_codegen = CALCTIME(tv_opt1, tv_codegen);
+		} else {
+			time_opt1 = 0.0f;
+			time_codegen = CALCTIME(tv_ast, tv_codegen);
+		}
+		
+		if (params.optimization_level & 2) {
+			time_opt2 = CALCTIME(tv_codegen, tv_opt2);
+		} else {
+			time_opt2 = 0.0f;
+		}
+
+		time_total = time_lex + time_ast + time_codegen + time_opt1 + time_opt2;
+
+		p_lex = CALCPERC(time_lex);
+		p_ast = CALCPERC(time_ast);
+		p_codegen = CALCPERC(time_codegen);
+
 		p_total = p_lex + p_ast + p_codegen;
 		
-		printf("\n--------------------------------------------------\n");
-		printf("     Time to Lex & Parse: %fs (%f%%)\n", time_lex, p_lex);
-		printf("      Time to create AST: %fs (%f%%)\n", time_ast, p_ast);
-		printf("   Time to generate code: %fs (%f%%)\n", time_codegen, p_codegen);
-		printf("                   Total: %fs (%f%%)\n", time_total, p_total);
+		if (params.optimization_level & 1) {
+			p_opt1 = CALCPERC(time_opt1);
+			p_total += p_opt1;
+		}
+		
+		if (params.optimization_level & 2) {
+			p_opt2 = CALCPERC(time_opt2);
+			p_total += p_opt2;
+		}		
+		
+		printf("\n----- Step ----------- Time ----- Percentage -----\n");
+		printf("     Lex & Parse    %fs    %0f%%\n", time_lex, p_lex);
+		
+		if (params.optimization_level & 1)
+			printf("Optimization (1)    %fs    %0f%%\n", time_opt1, p_opt1);
+
+		printf("      Create AST    %fs    %f%%\n", time_ast, p_ast);
+	
+		if (params.optimization_level & 2)
+			printf("Optimization (2)    %fs    %f%%\n", time_opt2, p_opt2);
+	
+		printf("   Generate code    %fs    %f%%\n", time_codegen, p_codegen);
+		printf("           Total    %fs    %f%%\n", time_total, p_total);
 		printf("--------------------------------------------------\n");
 	}
 		

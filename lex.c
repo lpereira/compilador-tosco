@@ -18,6 +18,7 @@
 #include <glib.h>
 
 #include "lex.h"
+#include "charbuf.h"
 
 const char     *literals[] = {
 	"(nil)", "literal", ",", "and", ":=", "boolean", ")",
@@ -32,7 +33,6 @@ const char     *literals[] = {
 };
 
 static int      line = 1, column = 1;
-static GSList	*char_buf = NULL;
 
 static TokenList *match_program(void);
 static TokenList *match_block(void);
@@ -62,32 +62,6 @@ static TokenList *match_identifier(void);
 static TokenList *match_number(void);
 
 static void     lex_error(char *message, ...);
-
-static void
-char_buf_put(char ch)
-{
-	char_buf = g_slist_prepend(char_buf, GINT_TO_POINTER((gint)ch));
-}
-
-static int
-char_buf_get(void)
-{
-	if (char_buf == NULL) {
-		return getchar();
-	} else {
-		int ch;
-	    GSList *next;
-
-		ch = GPOINTER_TO_INT(char_buf->data);
-
-		next = char_buf->next;
-		g_slist_free_1(char_buf);
-
-		char_buf = next;
-
-		return ch;	
-	}	
-}
 
 static void
 lex_error(char *message, ...)
@@ -138,28 +112,21 @@ unget_character(char ch)
 					 *		  problems, I guess :)
 					 */
 
-	char_buf_put(ch);
+	char_buf_put_char(ch);
 }
 
 static void
 unget_string(char *string)
 {
-	GSList *temp = NULL;
-	char ch;
+	char_buf_put_string(string);
 	
-	while (*string) {
-		ch = *string++;
-		
-		temp = g_slist_append(temp, GINT_TO_POINTER((gint)ch));
-		
+	for (; *string; string++) {
 		if (--column <= 0)
 			column = 1;
 		
-		if (ch == '\n')
+		if (*string == '\n')
 			line--;
 	}
-
-	char_buf = g_slist_concat(temp, char_buf);
 }
 
 static int
@@ -229,52 +196,6 @@ unget_tokenlist(TokenList * tl)
 		
 		unget_string(t->id);
 	}
-}
-
-TokenList      *
-tl_new(void)
-{
-	TokenList      *tl;
-
-	tl = g_new0(TokenList, 1);
-	tl->tokens = NULL;
-
-	return tl;
-}
-
-void
-tl_unref(TokenList * t)
-{
-	if (t && --t->ref_count < 0) {
-		tl_destroy(t);
-	}
-}
-
-void
-tl_ref(TokenList * t)
-{
-	t->ref_count++;
-}
-
-void
-tl_add_token(TokenList ** token_list, TokenList * t)
-{
-	GList          *token;
-
-	if (t) {
-		for (token = t->tokens; token; token = token->next) {
-			(*token_list)->tokens = g_list_append((*token_list)->tokens, token->data);
-		}
-
-		tl_unref(t);
-	}
-}
-
-void
-tl_destroy(TokenList * tl)
-{
-	g_list_free(tl->tokens);	
-	g_free(tl);
 }
 
 static TokenList      *
