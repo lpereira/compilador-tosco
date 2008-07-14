@@ -1,0 +1,11 @@
+
+CFLAGS = -Wall -pipe `pkg-config glib-2.0 --cflags`
+LIBS = `pkg-config glib-2.0 --libs`
+OBJECTS = stack.o symbol-table.o lex.o ast.o codegen.o main.o
+
+all:	$(OBJECTS)
+	$(CC) $(CFLAGS) -o pascal-compiler $(OBJECTS) $(LIBS)
+
+clean:
+	rm -f *.o
+	rm -f pascal-compiler

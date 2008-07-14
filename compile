@@ -1,8 +1,0 @@
-#!/bin/sh
-
-GLIB_FLAGS=$(pkg-config glib-2.0 --cflags)
-GLIB_LIBS=$(pkg-config glib-2.0 --libs)
-
-echo AST && gcc -Wall -g -o ast ast.c lex.c stack.c symbol-table.c -DTEST_AST $GLIB_FLAGS $GLIB_LIBS
-echo LEX && gcc -Wall -g -o lex lex.c  -DLEX_TEST $GLIB_FLAGS $GLIB_LIBS
-echo CG  && gcc -Wall -g -o codegen codegen.c ast.c lex.c stack.c symbol-table.c -DCODEGEN_TEST $GLIB_FLAGS $GLIB_LIBS
