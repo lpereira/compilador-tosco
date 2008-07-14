@@ -35,5 +35,6 @@ void		 tl_destroy(TokenList *tl);
 TokenList	*tl_new_char(char ch);
 
 TokenList *lex(void);
+int	   lex_test_main(int argc, char **argv);
 
 #endif	/* __LEX_H__ */

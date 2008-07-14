@@ -609,8 +609,7 @@ ast(TokenList * token_list)
 	return ast;
 }
 
-#ifdef TEST_AST
-gboolean
+static gboolean
 traverse_func(GNode * node, gpointer data)
 {
 	static GHashTable *t = NULL;
@@ -654,7 +653,7 @@ traverse_func(GNode * node, gpointer data)
 }
 
 int
-main(int argc, char **argv)
+ast_test_main(int argc, char **argv)
 {
 	GNode          *root;
 	TokenList      *token_list;
@@ -679,4 +678,3 @@ main(int argc, char **argv)
 
 	return 0;
 }
-#endif				/* TEST_AST */

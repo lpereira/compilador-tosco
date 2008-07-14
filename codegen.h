@@ -14,5 +14,6 @@ struct _Instruction {
 };
 
 void	codegen(GNode *node);
+int	codegen_test_main(int argc, char **argv);
 
 #endif	 /* __CODEGEN_H__ */

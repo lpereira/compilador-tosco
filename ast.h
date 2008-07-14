@@ -11,6 +11,6 @@ struct _ASTNode {
 };
 
 GNode          *ast(TokenList * token_list);
-
+int		ast_test_main(int argc, char **argv);
 #endif	/* __AST_H__ */
 

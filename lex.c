@@ -1007,8 +1007,7 @@ lex(void)
 	return match_program();
 }
 
-#ifdef LEX_TEST
-int
+static int
 qual_cor(TokenType t)
 {
 	switch (t) {
@@ -1060,7 +1059,7 @@ qual_cor(TokenType t)
 }
 
 int
-main(int argc, char **argv)
+lex_test_main(int argc, char **argv)
 {
 	Token          *token;
 	TokenList      *tl;
@@ -1091,4 +1090,3 @@ main(int argc, char **argv)
 	tl_unref(tl);
 	return 0;
 }
-#endif				/* LEX_TEST */
