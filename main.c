@@ -21,7 +21,6 @@ typedef struct _Params	Params;
 struct _Params {
 	gboolean test_parser,
 		 test_ast,
-		 test_codegen,
 		 show_time;
 	gint	 optimization_level;
 	gchar	*input_file,
@@ -32,25 +31,18 @@ struct _Params {
 static Params params;
 static GOptionEntry cmdline_options[] = {
 	{
-		.long_name = "test-parser",
+		.long_name = "pretty-print",
 		.short_name = 'P',
 		.arg = G_OPTION_ARG_NONE,
 		.arg_data = &params.test_parser,
-		.description = "Tests the Parser"
+		.description = "Pretty-print the input file"
 	},
 	{
-		.long_name = "test-ast",
+		.long_name = "show-ast",
 		.short_name = 'A',
 		.arg = G_OPTION_ARG_NONE,
 		.arg_data = &params.test_ast,
-		.description = "Tests the AST"
-	},
-	{
-		.long_name = "test-codegen",
-		.short_name = 'C',
-		.arg = G_OPTION_ARG_NONE,
-		.arg_data = &params.test_codegen,
-		.description = "Tests the Code Generation (TAC)"
+		.description = "Outputs a DOT-file with the AST"
 	},
 	{
 		.long_name = "optimization-level",
@@ -58,13 +50,6 @@ static GOptionEntry cmdline_options[] = {
 		.arg = G_OPTION_ARG_INT,
 		.arg_data = &params.optimization_level,
 		.description = "Sets the Optimization level (0-3)"
-	},
-	{
-		.long_name = "input-file",
-		.short_name = 'i',
-		.arg = G_OPTION_ARG_STRING,
-		.arg_data = &params.input_file,
-		.description = "Sets the input file"
 	},
 	{
 		.long_name = "output-file",
@@ -90,13 +75,6 @@ static GOptionEntry cmdline_options[] = {
 	{ NULL }
 };
 
-static void
-show_usage(gchar *program_name)
-{
-	g_print("Usage: %s -i input-file.pas\n\n"
-	        "See ``%s --help'' for more.\n\n", program_name, program_name);
-}
-
 int
 main(int argc, char **argv)
 {
@@ -107,16 +85,19 @@ main(int argc, char **argv)
 	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1, p_opt2;
 	GOptionContext *ctx;
 	
-	ctx = g_option_context_new("- Toy Pascal-ish Compiler");
+	ctx = g_option_context_new("input-file.pas ...");
 	g_option_context_set_help_enabled(ctx, TRUE);
 	g_option_context_add_main_entries(ctx, cmdline_options, NULL);
 	g_option_context_parse(ctx, &argc, &argv, NULL);
 	g_option_context_free(ctx);
 	
-	if (params.input_file) {
-	
+	if (argv[1]) {
+		params.input_file = argv[1];
+		
+		fclose(stdin);
+		stdin = fopen(params.input_file, "r");
 	} else {
-		show_usage(argv[0]);
+		g_print("%s: no input file\n", argv[0]);
 		return 0;
 	}
 	
@@ -128,10 +109,6 @@ main(int argc, char **argv)
 		return ast_test_main(argc, argv);
 	}
 	
-	if (params.test_codegen) {
-		return codegen_test_main(argc, argv);
-	}
-
 	gettimeofday(&tv_start, NULL);
 	
 	token_list = lex();
