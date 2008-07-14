@@ -19,7 +19,7 @@ symbol_table_new(void)
 void
 symbol_table_free(SymbolTable *st)
 {
-	GList *list;
+	GSList *list;
 	
 	g_return_if_fail(st);
 	
@@ -27,7 +27,7 @@ symbol_table_free(SymbolTable *st)
 		g_hash_table_unref((GHashTable *) list->data);
 	}
 	
-	g_list_free(st->table);
+	g_slist_free(st->table);
 	g_free(st);
 }
 
@@ -37,24 +37,25 @@ symbol_table_push_context(SymbolTable *st)
 	GHashTable *ht;
 	
 	g_return_if_fail(st);
-
+	
 	ht = g_hash_table_new(g_str_hash, g_str_equal);	
 	g_hash_table_ref(ht);
-	st->table = g_list_prepend(st->table, ht);
+	
+	st->table = g_slist_prepend(st->table, ht);
 }
 
 void
 symbol_table_pop_context(SymbolTable *st)
 {
-	GList *first;
+	GSList *first;
 	
 	g_return_if_fail(st);
 
 	first = st->table;
 	st->table = first->next;
 	
-	g_hash_table_unref((GHashTable *) first->data);
-	g_list_free_1(first);
+	g_hash_table_destroy((GHashTable *) first->data);
+	g_slist_free_1(first);
 }
 
 void
@@ -65,7 +66,7 @@ symbol_table_install(SymbolTable *st, gchar *symbol_name, STEntryType type, STEn
 	
 	g_return_if_fail(st);
 	g_return_if_fail(st->table);
-		
+
 	if (symbol_table_is_installed(st, symbol_name))
 		return;
 
@@ -81,16 +82,16 @@ symbol_table_install(SymbolTable *st, gchar *symbol_name, STEntryType type, STEn
 static STEntry *
 __symbol_table_get_symbol_entry(SymbolTable *st, gchar *symbol_name, gint n)
 {
-	GList *list;
+	GSList *list;
 	STEntry *entry;
 	
 	g_return_val_if_fail(st, NULL);
-	
+
 	if (!st->table)
 		return NULL;
 	
 	if (n == -1) {
-		for (list = st->table; list; list = list->next) {	
+		for (list = st->table; list; list = list->next) {
 			if ((entry = g_hash_table_lookup((GHashTable *)list->data, symbol_name))) {
 				return entry;
 			}
@@ -194,7 +195,7 @@ guint
 symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name)
 {
 	guint offset = 0;
-	GList *list;
+	GSList *list;
 	STEntry *entry;
 
 	list = st->table;

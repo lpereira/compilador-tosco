@@ -29,7 +29,7 @@ struct _STEntry {
 };
 
 struct _SymbolTable {
-	GList *table;
+	GSList *table;
 };
 
 extern gchar *st_types[], *sk_types[];
