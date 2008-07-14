@@ -6,6 +6,6 @@ all:	$(OBJECTS)
 	$(CC) $(CFLAGS) -o compiler $(OBJECTS) $(LIBS)
 
 clean:
-	rm -f *.o
+	rm -f *.o *~
 	rm -f compiler
 

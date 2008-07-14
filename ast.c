@@ -205,8 +205,6 @@ __op_priority(TokenType op)
 	case T_MULTIPLY:
 	case T_DIVIDE:
 		return 1;
-	case T_NOT:
-		return 2;
 	case T_OP_DIFFERENT:
 	case T_OP_EQUAL:
 	case T_OP_GT:
@@ -214,6 +212,9 @@ __op_priority(TokenType op)
 	case T_OP_GEQ:
 	case T_OP_LEQ:
 	case T_OR:
+		return 2;
+	case T_NOT:
+	case T_UNARY_MINUS:
 		return 3;
 	}
 
