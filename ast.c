@@ -341,7 +341,7 @@ ast_attrib(GNode * root, GList ** tokens)
 {
 	Token          *token;
 	GNode          *attrib_node;
-	ASTNode	       *ast_node;
+	ASTNode	       *ast_node = NULL;
 
 	token = (Token *) (*tokens)->prev->data;
 
@@ -608,7 +608,6 @@ ast(TokenList * token_list)
 
 	return ast;
 }
-
 
 #ifdef TEST_AST
 gboolean
