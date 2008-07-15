@@ -35,7 +35,7 @@ static GOptionEntry cmdline_options[] = {
 		.short_name = 'P',
 		.arg = G_OPTION_ARG_NONE,
 		.arg_data = &params.test_parser,
-		.description = "Pretty-print the input file"
+		.description = "Pretty-print the input file (requires ANSI terminal)"
 	},
 	{
 		.long_name = "show-ast",
@@ -94,11 +94,15 @@ main(int argc, char **argv)
 	if (argv[1]) {
 		params.input_file = argv[1];
 		
+		/* nasty hack. but hey, it works! :) */
 		fclose(stdin);
-		stdin = fopen(params.input_file, "r");
+		if (!(stdin = fopen(params.input_file, "r"))) {
+			g_print("%s: can't open input file ``%s''\n", argv[0], params.input_file);
+			return 1;
+		}
 	} else {
 		g_print("%s: no input file\n", argv[0]);
-		return 0;
+		return 1;
 	}
 	
 	if (params.test_parser) {
