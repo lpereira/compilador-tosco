@@ -659,11 +659,6 @@ ast_test_main(int argc, char **argv)
 	GNode          *root;
 	TokenList      *token_list;
 	
-	if (argc >= 2) {
-		fclose(stdin);
-		stdin = fopen(argv[1], "r");		
-	}
-	
 	token_list = lex();
 	root = ast(token_list);
 	
@@ -675,7 +670,6 @@ ast_test_main(int argc, char **argv)
 	puts("digraph ast {");
 	g_node_traverse(root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	puts("}");
-
 
 	return 0;
 }

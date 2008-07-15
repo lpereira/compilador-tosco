@@ -965,6 +965,8 @@ qual_cor(TokenType t)
 	case T_MULTIPLY:
 	case T_PLUS:
 	case T_DIVIDE:
+	case T_NOT:
+	case T_UNARY_MINUS:
 		return 6;
 
 	case T_IDENTIFIER:
@@ -986,11 +988,6 @@ lex_test_main(int argc, char **argv)
 	GList          *t;
 	char           *cores[] = {"37;1", "32;1", "32", "36;1", "33;1", "34;1", "31", "33"};
 	
-	if (argc >= 2) {
-		fclose(stdin);
-		stdin = fopen(argv[1], "r");		
-	}
-
 	if ((tl = match_program())) {
 		for (t = tl->tokens; t; t = t->next) {
 			token = (Token *) t->data;

@@ -14,6 +14,8 @@
 #include "symbol-table.h"
 #include "stack.h"
 
+#include "optimization-l1.h"
+
 #define CALCTIME(start,end) 	((end.tv_sec - start.tv_sec) + ((end.tv_usec - start.tv_usec) / 1e6))
 #define CALCPERC(t)		(100.0f * t) / time_total
 
@@ -123,7 +125,7 @@ main(int argc, char **argv)
 	gettimeofday(&tv_ast, NULL);
 	
 	if (params.optimization_level & 1) {
-		/* do the first-level optimization thing */
+		root = optimization_l1(root);
 		gettimeofday(&tv_opt1, NULL);
 	}
 

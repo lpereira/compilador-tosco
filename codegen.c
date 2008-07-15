@@ -528,11 +528,6 @@ codegen_test_main(int argc, char **argv)
 	GNode          *root;
 	TokenList      *token_list;
 
-	if (argc >= 2) {
-		fclose(stdin);
-		stdin = fopen(argv[1], "r");		
-	}
-	
 	token_list = lex();
 	root = ast(token_list);
 
