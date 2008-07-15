@@ -1,7 +1,15 @@
 #include <stdio.h>
+
 #include "charbuf.h"
 
+static FILE	*char_buf_input = NULL;
 static GSList	*char_buf = NULL;
+
+void
+char_buf_set_file(FILE *f)
+{
+	char_buf_input = f;
+}
 
 void
 char_buf_put_char(char ch)
@@ -25,7 +33,7 @@ int
 char_buf_get(void)
 {
 	if (char_buf == NULL) {
-		return getchar();
+		return fgetc(char_buf_input ? char_buf_input : stdin);
 	} else {
 		int ch;
 		GSList *next;

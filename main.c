@@ -84,6 +84,7 @@ main(int argc, char **argv)
 	gdouble		time_lex, time_ast, time_codegen, time_total, time_opt1, time_opt2;
 	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1, p_opt2;
 	GOptionContext *ctx;
+	FILE	       *input_file;
 	
 	ctx = g_option_context_new("input-file.pas ...");
 	g_option_context_set_help_enabled(ctx, TRUE);
@@ -94,11 +95,11 @@ main(int argc, char **argv)
 	if (argv[1]) {
 		params.input_file = argv[1];
 		
-		/* nasty hack. but hey, it works! :) */
-		fclose(stdin);
-		if (!(stdin = fopen(params.input_file, "r"))) {
+		if (!(input_file = fopen(params.input_file, "r"))) {
 			g_print("%s: can't open input file ``%s''\n", argv[0], params.input_file);
 			return 1;
+		} else {
+			char_buf_set_file(input_file);
 		}
 	} else {
 		g_print("%s: no input file\n", argv[0]);
@@ -135,6 +136,7 @@ main(int argc, char **argv)
 	}
 
 	tl_destroy(token_list);
+	fclose(input_file);
 	
 	if (params.show_time) {
 		time_lex = CALCTIME(tv_start, tv_lex);

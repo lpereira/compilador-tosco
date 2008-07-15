@@ -1,6 +1,7 @@
 #ifndef __LEX_H__
 #define __LEX_H__
 
+#include "charbuf.h"
 #include "tokenlist.h"
 
 extern const char *literals[];

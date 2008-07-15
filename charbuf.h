@@ -6,6 +6,7 @@
 void	char_buf_put_char(gchar ch);
 void	char_buf_put_string(gchar *string);
 int	char_buf_get(void);
+void	char_buf_set_file(FILE *f);
 
 
 #endif	/* __CHARBUF_H__ */

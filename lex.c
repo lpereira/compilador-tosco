@@ -18,7 +18,6 @@
 #include <glib.h>
 
 #include "lex.h"
-#include "charbuf.h"
 
 const char     *literals[] = {
 	"(nil)", "literal", ",", "and", ":=", "boolean", ")",
