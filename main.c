@@ -97,7 +97,9 @@ main(int argc, char **argv)
 	if (argv[1]) {
 		params.input_file = argv[1];
 		
-		if (!(input_file = fopen(params.input_file, "r"))) {
+		if (g_str_equal(params.input_file, "-")) {
+			char_buf_set_file(stdin);
+		} else if (!(input_file = fopen(params.input_file, "r"))) {
 			g_print("%s: can't open input file ``%s''\n", argv[0], params.input_file);
 			return 1;
 		} else {
@@ -138,7 +140,6 @@ main(int argc, char **argv)
 	}
 
 	tl_destroy(token_list);
-	fclose(input_file);
 	
 	if (params.show_time) {
 		time_lex = CALCTIME(tv_start, tv_lex);
@@ -178,16 +179,15 @@ main(int argc, char **argv)
 		
 		printf("\n----- Step ----------- Time ----- Percentage -----\n");
 		printf("     Lex & Parse    %fs    %0f%%\n", time_lex, p_lex);
-		
+		printf("      Create AST    %fs    %f%%\n", time_ast, p_ast);
+
 		if (params.optimization_level & 1)
 			printf("Optimization (1)    %fs    %0f%%\n", time_opt1, p_opt1);
-
-		printf("      Create AST    %fs    %f%%\n", time_ast, p_ast);
-	
-		if (params.optimization_level & 2)
-			printf("Optimization (2)    %fs    %f%%\n", time_opt2, p_opt2);
 	
 		printf("   Generate code    %fs    %f%%\n", time_codegen, p_codegen);
+
+		if (params.optimization_level & 2)
+			printf("Optimization (2)    %fs    %f%%\n", time_opt2, p_opt2);
 		printf("           Total    %fs    %f%%\n", time_total, p_total);
 		printf("--------------------------------------------------\n");
 	}

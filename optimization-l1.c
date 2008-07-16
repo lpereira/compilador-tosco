@@ -12,6 +12,12 @@
 #include "ast.h"
 #include "tokenlist.h"
 
+/*
+ * TODO
+ * - Constant propagation
+ * - Strength reduction
+ */
+
 static void
 fold_constants(GNode *node, GNode *parent)
 {
@@ -29,9 +35,8 @@ fold_constants(GNode *node, GNode *parent)
     fold_constants(lchild, node);
     fold_constants(rchild, node);
     
-    for (child = rchild->children; child; child = child->next) {
+    for (child = rchild->children; child; child = child->next)
         fold_constants(child, node);
-    }
     
     if (!(lchild = node->children) || !(rchild = lchild->next))
         return;
@@ -58,6 +63,10 @@ fold_constants(GNode *node, GNode *parent)
                 r = g_strdup_printf("%d", p1 * p2);
                 break;
             case T_DIVIDE:
+                /* FIXME: Generate an error when a divide by zero would occur.
+                          This is easy, but we don't know the AST node 
+                          location, so the error message would be
+                          meaningless. Just leave error messages to runtime. */
                 if (p2) {
                     r = g_strdup_printf("%d", p1 / p2);
                 }
@@ -113,8 +122,9 @@ fold_constants_traverse_func(GNode *node,
     
     switch (ast_node->token) {
       case T_ATTRIB:
-      /* case T_IF: 
-         case T_WHILE: */
+      /* case T_IF: 		// if conditions
+         case T_WHILE: 		// while conditions
+      */
           fold_constants(node, NULL);
           /* fallthrough */
       default:
