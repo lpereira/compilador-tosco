@@ -18,15 +18,10 @@ fold_constants(GNode *node, GNode *parent)
     GNode *lchild, *rchild, *child;
     ASTNode *lan, *ran, *nan, *replace = NULL;
 
-    if (!node)
+    if (!node || !(lchild = node->children))
         return;
     
-    lchild = node->children;
-    if (!lchild)
-        return;
-    
-    rchild = node->children->next;
-    if (!rchild) {
+    if (!(rchild = node->children->next)) {
         fold_constants(lchild, node);
         return;
     }
@@ -38,155 +33,62 @@ fold_constants(GNode *node, GNode *parent)
         fold_constants(child, node);
     }
     
-    lchild = node->children;
-    if (!lchild)
+    if (!(lchild = node->children) || !(rchild = lchild->next))
         return;
-    
-    rchild = lchild->next;
-    if (!rchild)
-        return;
-    
+
     lan = (ASTNode *)lchild->data;
     ran = (ASTNode *)rchild->data;
     nan = (ASTNode *)node->data;
     
-    switch (nan->token) {
-        case T_PLUS:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+    if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
+        short p1, p2;
+        gchar *r = NULL;
+        
+        p1 = atoi((char *)lan->data);
+        p2 = atoi((char *)ran->data);
+        
+        switch (nan->token) {
+            case T_PLUS:
                 r = g_strdup_printf("%d", p1 + p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_MINUS:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_MINUS:
                 r = g_strdup_printf("%d", p1 - p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_MULTIPLY:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_MULTIPLY:
                 r = g_strdup_printf("%d", p1 * p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_DIVIDE:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_DIVIDE:
                 if (p2) {
-                    p1 = atoi((char *)lan->data);
                     r = g_strdup_printf("%d", p1 / p2);
-                
-                    replace = ast_node_new(T_NUMBER, r);
                 }
-            }
-            break;
-        case T_OP_DIFFERENT:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_DIFFERENT:	
                 r = g_strdup_printf("%d", p1 != p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_OP_EQUAL:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_EQUAL:
                 r = g_strdup_printf("%d", p1 == p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_OP_GT:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_GT:
                 r = g_strdup_printf("%d", p1 > p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_OP_GEQ:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_GEQ:
                 r = g_strdup_printf("%d", p1 >= p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_OP_LT:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_LT:
                 r = g_strdup_printf("%d", p1 < p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        case T_OP_LEQ:
-            if (lan->token == T_NUMBER && ran->token == T_NUMBER) {
-                short p1, p2;
-                gchar *r;
-                
-                p1 = atoi((char *)lan->data);
-                p2 = atoi((char *)ran->data);
-                
+                break;
+            case T_OP_LEQ:
                 r = g_strdup_printf("%d", p1 <= p2);
-                
-                replace = ast_node_new(T_NUMBER, r);
-            }
-            break;
-        default:
-            ;
+                break;
+            default:
+                ;
+        }
+        
+        if (r) {
+            replace = ast_node_new(T_NUMBER, r);
+        }
     }
-    
+      
     if (replace) {
         /* FIXME: free up the memory taken by the AST nodes when we destroy their
                   parents. */
