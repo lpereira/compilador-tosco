@@ -2,7 +2,7 @@
  * Simple Pascal Compiler
  * Abstract Syntax Tree
  *
- * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@linuxmag.com.br>
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
  *
  * ast_expression() is based on Exp_to_Tree (Function to Convert Infix Expression to Expression Tree),
  * written by Michael B. Feldman <mfeldman@gwu.edu>.

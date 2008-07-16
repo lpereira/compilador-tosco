@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Code Optimizer
+ *
+ * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinf.org>
+ */
+
 #include <stdlib.h>
 
 #include "optimization-l1.h"
@@ -181,18 +188,13 @@ fold_constants(GNode *node, GNode *parent)
     }
     
     if (replace) {
-        /*ASTNode *ast_temp;*/
+        /* FIXME: free up the memory taken by the AST nodes when we destroy their
+                  parents. */
         GNode *temp;
         gint position = 0;
         
         for (temp = parent->children; temp; temp = temp->next, position++) {
             if (temp == node) {
-                /*
-                ast_temp = (ASTNode *)node->data;
-                
-                g_free(ast_temp->data);
-                g_free(ast_temp);*/
-                
                 g_node_destroy(node);
                 g_node_insert(parent, position, g_node_new(replace));
                 return;

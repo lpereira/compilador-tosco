@@ -2,7 +2,7 @@
  * Simple Pascal Compiler
  * Lexical and Syntatical Analysis
  *
- * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@linuxmag.com.br>
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
  */
 
 /*
