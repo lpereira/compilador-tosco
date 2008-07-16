@@ -2,6 +2,7 @@
 #define __CHARBUF_H__
 
 #include <glib.h>
+#include <stdio.h>
 
 void	char_buf_put_char(gchar ch);
 void	char_buf_put_string(gchar *string);

@@ -49,7 +49,7 @@ ast_error_token(Token *token, gchar *message, ...)
 	exit(1);
 }
 
-static ASTNode        *
+ASTNode        *
 ast_node_new(TokenType token, gpointer data)
 {
 	ASTNode        *node;

@@ -125,7 +125,7 @@ main(int argc, char **argv)
 	gettimeofday(&tv_ast, NULL);
 	
 	if (params.optimization_level & 1) {
-		root = optimization_l1(root);
+		optimization_l1(root);
 		gettimeofday(&tv_opt1, NULL);
 	}
 
