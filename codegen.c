@@ -429,25 +429,23 @@ generate_false(GNode *node)
 static guint
 generate_not(GNode *node)
 {
-	guint r, s;
+	guint r;
 	
-	s = temp_new();
 	r = generate(node->children);
-	printf("\tt%d := not t%d\n", s, r);
+	printf("\tt%d := not t%d\n", r, r);
 	
-	return s;
+	return r;
 }
 
 static guint
 generate_uminus(GNode *node)
 {
-	guint r, s;
+	guint r;
 	
-	s = temp_new();
 	r = generate(node->children);
-	printf("\tt%d := neg t%d\n", s, r);
+	printf("\tt%d := neg t%d\n", r, r);
 	
-	return s;
+	return r;
 }
 
 static guint
