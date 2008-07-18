@@ -199,12 +199,6 @@ __op_priority(TokenType op)
 	switch (op) {
 	default:
 		break;
-	case T_PLUS:
-	case T_MINUS:
-		return 0;
-	case T_MULTIPLY:
-	case T_DIVIDE:
-		return 1;
 	case T_OP_DIFFERENT:
 	case T_OP_EQUAL:
 	case T_OP_GT:
@@ -212,6 +206,12 @@ __op_priority(TokenType op)
 	case T_OP_GEQ:
 	case T_OP_LEQ:
 	case T_OR:
+		return 0;
+	case T_PLUS:
+	case T_MINUS:
+		return 1;
+	case T_MULTIPLY:
+	case T_DIVIDE:
 		return 2;
 	case T_NOT:
 	case T_UNARY_MINUS:
@@ -238,8 +238,11 @@ pop_connect_push(Stack * op_stack, Stack * node_stack)
 	right = (GNode *) stack_pop(node_stack);
 	left  = (GNode *) stack_pop(node_stack);
 
-	g_node_append(temp, left);
-	g_node_append(temp, right);
+	if (left)
+		g_node_append(temp, left);
+	
+	if (right)
+		g_node_append(temp, right);
 
 	stack_push(node_stack, temp);
 }

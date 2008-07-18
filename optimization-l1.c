@@ -122,11 +122,10 @@ fold_constants_traverse_func(GNode *node,
     
     switch (ast_node->token) {
       case T_ATTRIB:
-      /* case T_IF: 		// if conditions
-         case T_WHILE: 		// while conditions
-      */
+      case T_IF:
+      case T_WHILE:
           fold_constants(node, NULL);
-          /* fallthrough */
+          /* fall through */
       default:
           ;
     }

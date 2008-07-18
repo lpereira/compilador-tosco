@@ -37,7 +37,7 @@ static GOptionEntry cmdline_options[] = {
 		.short_name = 'P',
 		.arg = G_OPTION_ARG_NONE,
 		.arg_data = &params.test_parser,
-		.description = "Pretty-print the input file (requires ANSI terminal)"
+		.description = "Pretty-print the input file (requires ANSI term.)"
 	},
 	{
 		.long_name = "show-ast",

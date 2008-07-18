@@ -24,11 +24,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#ifdef CODEGEN_TEST
-#include <sys/time.h>
-#include <time.h>
-#endif	/* CODEGEN_TEST */
-
 #include <glib.h>
 
 #include "lex.h"
@@ -432,6 +427,30 @@ generate_false(GNode *node)
 }
 
 static guint
+generate_not(GNode *node)
+{
+	guint r, s;
+	
+	s = temp_new();
+	r = generate(node->children);
+	printf("\tt%d := not t%d\n", s, r);
+	
+	return s;
+}
+
+static guint
+generate_uminus(GNode *node)
+{
+	guint r, s;
+	
+	s = temp_new();
+	r = generate(node->children);
+	printf("\tt%d := neg t%d\n", s, r);
+	
+	return s;
+}
+
+static guint
 generate(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *) node->data;
@@ -449,6 +468,12 @@ generate(GNode *node)
 		case T_OP_LEQ:
 		case T_OP_DIFFERENT:
 			r = generate_binop(node);
+			break;
+		case T_NOT:
+			r = generate_not(node);
+			break;
+		case T_UNARY_MINUS:
+			r = generate_uminus(node);
 			break;
 		case T_TRUE:
 			r = generate_true(node);
