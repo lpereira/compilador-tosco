@@ -850,17 +850,18 @@ match_identifier(void)
 	} else {
 		buffer[index++] = ch;
 		
-		while (1) {
+		while (index < 128) {
 			ch = get_character();
 			if (isalpha(ch) || isdigit(ch) || ch == '_') {
 				buffer[index++] = ch;
 			} else {
 				unget_character(ch);
-				buffer[index] = '\0';
 				
 				break;
 			}
 		}
+		
+		buffer[index] = '\0';
 		
 		if (reserved_token(buffer)) {
 			unget_string(buffer);
@@ -895,17 +896,17 @@ match_number(void)
 	} else {
 		buffer[index++] = ch;
 		
-		while (1) {
+		while (index < 128) {
 			ch = get_character();
 			if (isdigit(ch)) {
 				buffer[index++] = ch;
 			} else {
 				unget_character(ch);
-				buffer[index] = '\0';
 				
 				break;
 			}
 		}
+		buffer[index] = '\0';
 		
 		tl = tl_new();
 

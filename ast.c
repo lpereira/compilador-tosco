@@ -294,7 +294,7 @@ ast_expression(GNode * root, GList ** tokens, TokenType stop)
 		case T_MULTIPLY:
 		case T_DIVIDE:
 		case T_NOT:		/* FIXME: unaries go here as well? */
-		case T_UNARY_MINUS:
+		case T_UNARY_MINUS:	/* FIXME: it seems so, but I need to test more! */
 		case T_OP_DIFFERENT:
 		case T_OP_EQUAL:
 		case T_OP_GT:
