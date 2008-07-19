@@ -617,12 +617,12 @@ static gboolean
 traverse_func(GNode * node, gpointer data)
 {
 	static GHashTable *t = NULL;
-	static gint count = 0;
+	static gint count = 0, last_printed = -1;
 	
 	if (!t) {
 		t = g_hash_table_new(NULL, g_int_equal);
 	}
-
+	
 	if (node->parent) {
 		ASTNode *ast_node = (ASTNode *) node->data, *ast_parent = (ASTNode *) node->parent->data;
 		gchar *data1, *data2;
@@ -648,10 +648,18 @@ traverse_func(GNode * node, gpointer data)
 		
 		data1 = g_str_equal(data1, literals[ast_parent->token]) ? "" : data1;
 		data2 = g_str_equal(data2, literals[ast_node->token]) ? "" : data2;
+
+		if (last_printed < lbl1) {
+			printf("\tnode%d [label=\"%s %s\"];\n", lbl1, literals[ast_parent->token], data1);
+			last_printed = lbl1;
+		}
 		
-		printf("\t\"%s %s (%d)\" -> \"%s %s (%d)\";\n",
-		       literals[ast_parent->token], data1, lbl1,
-		       literals[ast_node->token],   data2, lbl2);
+		if (last_printed < lbl2) {
+			printf("\tnode%d [label=\"%s %s\"];\n", lbl2, literals[ast_node->token], data2);
+			last_printed = lbl2;
+		}
+
+		printf("\tnode%d -> node%d;\n", lbl1, lbl2);		       
 	}
 	return FALSE;
 }
