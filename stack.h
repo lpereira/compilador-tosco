@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * Stack
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #ifndef __STACK_H__
 #define __STACK_H__
 

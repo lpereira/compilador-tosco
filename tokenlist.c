@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * Token List
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #include "tokenlist.h"
 
 TokenList      *

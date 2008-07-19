@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Lexical and Syntatical Analysis
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+
 #ifndef __LEX_H__
 #define __LEX_H__
 

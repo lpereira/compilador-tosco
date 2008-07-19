@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Character Buffer
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+
 #include <stdio.h>
 
 #include "charbuf.h"

@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * Code Generator
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #ifndef __CODEGEN_H__
 #define __CODEGEN_H__
 

@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Main program
+ *
+ * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +47,7 @@ static GOptionEntry cmdline_options[] = {
 		.description = "Pretty-print the input file (requires ANSI term.)"
 	},
 	{
-		.long_name = "show-ast",
+		.long_name = "generate-dot-ast",
 		.short_name = 'A',
 		.arg = G_OPTION_ARG_NONE,
 		.arg_data = &params.test_ast,

@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * Symbol Table
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #include "symbol-table.h"
 
 gchar *st_types[] = { "", "program", "variable", "function", "procedure" };

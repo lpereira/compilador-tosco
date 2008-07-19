@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Abstract Syntax Tree
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ *
+ */
 #ifndef __AST_H__
 #define __AST_H__
 

@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * Symbol Table
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #ifndef __SYMBOL_TABLE_H__
 #define __SYMBOL_TABLE_H__
 

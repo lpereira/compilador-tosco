@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Character Buffer
+ *
+ * Copyright (c) 2007-2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+
 #ifndef __CHARBUF_H__
 #define __CHARBUF_H__
 
