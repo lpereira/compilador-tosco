@@ -206,7 +206,7 @@ struct _EmitterWriter {
 
 Emitter	*emitter_new();
 void	 emitter_write(Emitter *emitter, EmitterWriter *writer, FILE *output);
-void	 emitter_destroy(Emitter *emitter);
+void	 emitter_free(Emitter *emitter);
 
 void	 emitter_emit_label(Emitter *emitter, guint number);
 void	 emitter_emit_goto(Emitter *emitter, guint label_number);
