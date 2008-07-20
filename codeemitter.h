@@ -48,6 +48,7 @@ typedef enum {
   I_WRITE,
   I_RETURN,
   I_RETURNV,
+  I_COPYRETV,
   I_PUSHREG,
   I_POPREG,
   I_PCALL,

@@ -22,6 +22,11 @@
 #include "stack.h"
 
 #include "optimization-l1.h"
+#include "optimization-l2.h"
+
+#include "writer-tac.h"
+#include "writer-risclie.h"
+#include "writer-llvm.h"
 
 #define CALCTIME(start,end) 	((end.tv_sec - start.tv_sec) + ((end.tv_usec - start.tv_usec) / 1e6))
 #define CALCPERC(t)		(100.0f * t) / time_total
@@ -72,7 +77,7 @@ static GOptionEntry cmdline_options[] = {
 		.short_name = 'f',
 		.arg = G_OPTION_ARG_STRING,
 		.arg_data = &params.output_format,
-		.description = "Specify the output format (risclie/llvm)"
+		.description = "Specify the output format (tac/risclie/llvm)"
 	},
 	{
 		.long_name = "show-time",
@@ -143,11 +148,22 @@ main(int argc, char **argv)
 	gettimeofday(&tv_codegen, NULL);
 	
 	if (params.optimization_level & 2) {
-		/* do the second-level optimization thing */
+		optimization_l2(emitter);
 		gettimeofday(&tv_opt2, NULL);
+	}
+	
+	if (!params.output_format || g_str_equal(params.output_format, "tac")) {
+		emitter_write(emitter, writer_tac_get_emitter(), stdout);
+	} else if (g_str_equal(params.output_format, "llvm")) {
+		emitter_write(emitter, writer_llvm_get_emitter(), stdout);
+	} else if (g_str_equal(params.output_format, "risclie")) {
+		emitter_write(emitter, writer_risclie_get_emitter(), stdout);
+	} else {
+		g_print("Unknown output format ``%s''.\n", params.output_format);
 	}
 
 	tl_destroy(token_list);
+	emitter_free(emitter);
 	
 	if (params.show_time) {
 		time_lex = CALCTIME(tv_start, tv_lex);
