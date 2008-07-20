@@ -91,7 +91,7 @@ tac_read(InstructionRead *i, FILE *output)
 }
 
 static void
-tac_write(InstrutionWrite *i, FILE *output)
+tac_write(InstructionWrite *i, FILE *output)
 {
 
 }
