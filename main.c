@@ -27,6 +27,7 @@
 #include "writer-tac.h"
 #include "writer-risclie.h"
 #include "writer-llvm.h"
+#include "writer-c.h"
 
 #define CALCTIME(start,end) 	((end.tv_sec - start.tv_sec) + ((end.tv_usec - start.tv_usec) / 1e6))
 #define CALCPERC(t)		(100.0f * t) / time_total
@@ -158,6 +159,8 @@ main(int argc, char **argv)
 		emitter_write(emitter, writer_llvm_get_emitter(), stdout);
 	} else if (g_str_equal(params.output_format, "risclie")) {
 		emitter_write(emitter, writer_risclie_get_emitter(), stdout);
+	} else if (g_str_equal(params.output_format, "c")) {
+		emitter_write(emitter, writer_c_get_emitter(), stdout);
 	} else {
 		g_print("Unknown output format ``%s''.\n", params.output_format);
 	}
