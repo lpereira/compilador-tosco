@@ -128,7 +128,7 @@ c_write(InstructionWrite *i, FILE *output)
 static void
 c_return(InstructionReturn *i, FILE *output)
 {
-  fprintf(output, "    longjmp(callstack[csp--], 1);\n");
+  fprintf(output, "    _longjmp(callstack[csp--], 1);\n");
 }
 
 static void
@@ -158,15 +158,15 @@ c_popreg(InstructionPopReg *i, FILE *output)
 static void
 c_pcall(InstructionPCall *i, FILE *output)
 {
-  fprintf(output, "    setjmp(callstack[++csp]);\n");
-  fprintf(output, "    goto label%d;\n", i->label_number);
+  fprintf(output, "    if (_setjmp(callstack[++csp]) == 0)\n");
+  fprintf(output, "        goto label%d;\n", i->label_number);
 }
 
 static void
 c_fcall(InstructionFCall *i, FILE *output)
 {
-  fprintf(output, "    setjmp(callstack[++csp]);\n");
-  fprintf(output, "    call label%d;\n", i->label_number);
+  fprintf(output, "    if (_setjmp(callstack[++csp]) == 0)\n");
+  fprintf(output, "        goto label%d;\n", i->label_number);
 }
 
 EmitterWriter *

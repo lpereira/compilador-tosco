@@ -29,7 +29,7 @@ begin
 }
 
 { mas isso causa (e nao deveria!) }
-  if (not (resto = 0 + 0)) then p else q;
+  if resto = 0 then p else q;
 
   v := -v;
   write(v);
