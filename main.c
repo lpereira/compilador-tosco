@@ -78,7 +78,7 @@ static GOptionEntry cmdline_options[] = {
 		.short_name = 'f',
 		.arg = G_OPTION_ARG_STRING,
 		.arg_data = &params.output_format,
-		.description = "Specify the output format (tac/risclie/llvm)"
+		.description = "Specify the output format (tac/risclie/llvm/c)"
 	},
 	{
 		.long_name = "show-time",
@@ -96,6 +96,7 @@ main(int argc, char **argv)
 	GNode          *root;
 	TokenList      *token_list;
 	Emitter	       *emitter;
+	EmitterWriter  *writer = NULL;
 	struct timeval	tv_start, tv_lex, tv_ast, tv_codegen, tv_opt1, tv_opt2;
 	gdouble		time_lex, time_ast, time_codegen, time_total, time_opt1, time_opt2;
 	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1 = 0.0f, p_opt2 = 0.0f;
@@ -132,6 +133,19 @@ main(int argc, char **argv)
 		return ast_test_main(argc, argv);
 	}
 	
+	if (!params.output_format || g_str_equal(params.output_format, "tac")) {
+		writer = writer_tac_get_emitter();
+	} else if (g_str_equal(params.output_format, "llvm")) {
+		writer = writer_llvm_get_emitter();
+	} else if (g_str_equal(params.output_format, "risclie")) {
+		writer = writer_risclie_get_emitter();
+	} else if (g_str_equal(params.output_format, "c")) {
+		writer = writer_c_get_emitter();
+	} else {
+		g_print("%s: Unknown output format ``%s''\n", argv[0], params.output_format);
+		return 1;
+	}
+
 	gettimeofday(&tv_start, NULL);
 	
 	token_list = lex();
@@ -153,18 +167,8 @@ main(int argc, char **argv)
 		gettimeofday(&tv_opt2, NULL);
 	}
 	
-	if (!params.output_format || g_str_equal(params.output_format, "tac")) {
-		emitter_write(emitter, writer_tac_get_emitter(), stdout);
-	} else if (g_str_equal(params.output_format, "llvm")) {
-		emitter_write(emitter, writer_llvm_get_emitter(), stdout);
-	} else if (g_str_equal(params.output_format, "risclie")) {
-		emitter_write(emitter, writer_risclie_get_emitter(), stdout);
-	} else if (g_str_equal(params.output_format, "c")) {
-		emitter_write(emitter, writer_c_get_emitter(), stdout);
-	} else {
-		g_print("Unknown output format ``%s''.\n", params.output_format);
-	}
-
+	emitter_write(emitter, writer, stdout);
+	
 	tl_destroy(token_list);
 	emitter_free(emitter);
 	
