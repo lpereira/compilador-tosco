@@ -3,6 +3,6 @@
 
 #include "codeemitter.h"
 
-//extern EmiterWritter	*writer_llvm;
+EmitterWriter *writer_llvm_get_emitter(void);
 
 #endif	/* __WRITER_LLVM_H__ */

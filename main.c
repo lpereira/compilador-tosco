@@ -97,7 +97,7 @@ main(int argc, char **argv)
 	Emitter	       *emitter;
 	struct timeval	tv_start, tv_lex, tv_ast, tv_codegen, tv_opt1, tv_opt2;
 	gdouble		time_lex, time_ast, time_codegen, time_total, time_opt1, time_opt2;
-	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1, p_opt2;
+	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1 = 0.0f, p_opt2 = 0.0f;
 	GOptionContext *ctx;
 	FILE	       *input_file;
 	

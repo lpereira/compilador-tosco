@@ -179,30 +179,30 @@ struct _Instruction {
 };
 
 struct _EmitterWriter {
-  void	(*write_label)	(InstructionLabel i);
-  void	(*write_goto)	(InstructionGoto i);
-  void	(*write_ifnot)	(InstructionIfNot i);
-  void	(*write_if)	(InstructionIf i);
-  void	(*write_ldimed)	(InstructionLdImed i);
-  void	(*write_ldreg)	(InstructionLdReg i);
-  void	(*write_alloc)	(InstructionAlloc i);
-  void	(*write_free)	(InstructionFree i);
-  void	(*write_binop)	(InstructionBinOp i);
-  void	(*write_unop)	(InstructionUnOp i);
-  void	(*write_load)	(InstructionLoad i);
-  void	(*write_store)	(InstructionStore i);
-  void	(*write_read)	(InstructionRead i);
-  void	(*write_write)	(InstructionWrite i);
-  void	(*write_return)	(InstructionReturn i);
-  void	(*write_returnv)(InstructionReturnV i);
-  void	(*write_copyrv)	(InstructionCopyRetV i);
-  void	(*write_pushreg)(InstructionPushReg i);
-  void	(*write_popreg)	(InstructionPopReg i);
-  void	(*write_pcall)	(InstructionPCall i);
-  void	(*write_fcall)	(InstructionFCall i);
+  void	(*write_label)	(InstructionLabel *i, FILE *output);
+  void	(*write_goto)	(InstructionGoto *i, FILE *output);
+  void	(*write_ifnot)	(InstructionIfNot *i, FILE *output);
+  void	(*write_if)	(InstructionIf *i, FILE *output);
+  void	(*write_ldimed)	(InstructionLdImed *i, FILE *output);
+  void	(*write_ldreg)	(InstructionLdReg *i, FILE *output);
+  void	(*write_alloc)	(InstructionAlloc *i, FILE *output);
+  void	(*write_free)	(InstructionFree *i, FILE *output);
+  void	(*write_binop)	(InstructionBinOp *i, FILE *output);
+  void	(*write_unop)	(InstructionUnOp *i, FILE *output);
+  void	(*write_load)	(InstructionLoad *i, FILE *output);
+  void	(*write_store)	(InstructionStore *i, FILE *output);
+  void	(*write_read)	(InstructionRead *i, FILE *output);
+  void	(*write_write)	(InstructionWrite *i, FILE *output);
+  void	(*write_return)	(InstructionReturn *i, FILE *output);
+  void	(*write_returnv)(InstructionReturnV *i, FILE *output);
+  void	(*write_copyrv)	(InstructionCopyRetV *i, FILE *output);
+  void	(*write_pushreg)(InstructionPushReg *i, FILE *output);
+  void	(*write_popreg)	(InstructionPopReg *i, FILE *output);
+  void	(*write_pcall)	(InstructionPCall *i, FILE *output);
+  void	(*write_fcall)	(InstructionFCall *i, FILE *output);
   
-  void	(*write_prolog)	(void);
-  void	(*write_epilog)	(void);
+  void	(*write_prolog)	(FILE *output);
+  void	(*write_epilog)	(FILE *output);
 };
 
 Emitter	*emitter_new();

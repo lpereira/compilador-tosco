@@ -3,6 +3,6 @@
 
 #include "codeemitter.h"
 
-//extern EmiterWritter	*writer_risclie;
+EmitterWriter	*writer_risclie_get_emitter(void);
 
 #endif	/* __WRITER_RISCLIE_H__ */
