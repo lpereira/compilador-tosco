@@ -2,6 +2,7 @@
 #define __CODEEMITTER_H__
 
 #include <glib.h>
+#include <stdio.h>
 
 typedef struct _Emitter			Emitter;
 typedef struct _EmitterWriter		EmitterWriter;
@@ -17,13 +18,14 @@ typedef struct _InstructionLdReg	InstructionLdReg;
 typedef struct _InstructionAlloc	InstructionAlloc;
 typedef struct _InstructionFree		InstructionFree;
 typedef struct _InstructionBinOp	InstructionBinOp;
-typedef struct _InstrictionUnOp		InstructionUnOp;
+typedef struct _InstructionUnOp		InstructionUnOp;
 typedef struct _InstructionLoad		InstructionLoad;
 typedef struct _InstructionStore	InstructionStore;
 typedef struct _InstructionRead		InstructionRead;
 typedef struct _InstructionWrite	InstructionWrite;
 typedef struct _InstructionReturn	InstructionReturn;
 typedef struct _InstructionReturnV	InstructionReturnV;
+typedef struct _InstructionCopyRetV	InstructionCopyRetV;
 typedef struct _InstructionPushReg	InstructionPushReg;
 typedef struct _InstructionPopReg	InstructionPopReg;
 typedef struct _InstructionPCall	InstructionPCall;
@@ -49,105 +51,108 @@ typedef enum {
   I_PUSHREG,
   I_POPREG,
   I_PCALL,
-  I_FCALL,
+  I_FCALL
 } InstructionType;
 
 struct _Emitter {
   GList	*code;
-  EmitterWriter *writer;
 };
 
-struct InstructionLabel {
+struct _InstructionLabel {
   gint number;
 };
 
-struct InstructionGoto {
+struct _InstructionGoto {
   gint label;
 };
 
-struct InstructionIfNot {
-  guint reg;
-  guint label;
-}
-
-struct InstructionIf {
+struct _InstructionIfNot {
   guint reg;
   guint label;
 };
 
-struct InstructionLdImed {
+struct _InstructionIf {
+  guint reg;
+  guint label;
+};
+
+struct _InstructionLdImed {
   guint reg;
   guint value;
 };
 
-struct InstructionLdReg {
+struct _InstructionLdReg {
   guint reg1, reg2;
 };
 
-struct InstructionAlloc {
+struct _InstructionAlloc {
   guint bytes;
 };
 
-struct InstructionFree {
+struct _InstructionFree {
   guint bytes;
 };
 
-struct InstructionBinOp {
-  guint reg1, reg2;
+struct _InstructionBinOp {
+  guint reg1, reg2, result;
   gchar *op;	/* FIXME */
 };
 
-struct InstructionUnOp {
-  guint reg;
+struct _InstructionUnOp {
+  guint reg, result;
   gchar *op;	/* FIXME */
 };
 
-struct InstructionLoad {
+struct _InstructionLoad {
   guint reg;
   guint offset;
   guint size;
 };
 
-struct InstructionStore {
+struct _InstructionStore {
   guint reg;
   guint offset;
   guint size;
 };
 
-struct InstructionRead {
+struct _InstructionRead {
   guint reg;
 };
 
-struct InstructionWrite {
+struct _InstructionWrite {
   guint reg;
 };
 
-struct InstructionReturn {
+struct _InstructionReturn {
 };
 
-struct InstructionReturnV {
+struct _InstructionReturnV {
   guint reg;
 };
 
-struct InstructionPushReg {
+struct _InstructionCopyRetV {
+  guint toreg;
+};
+
+struct _InstructionPushReg {
   guint reg;
 };
 
-struct InstructionPopReg {
+struct _InstructionPopReg {
   guint reg;
 };
 
-struct InstructionPCall {
+struct _InstructionPCall {
   guint label_number;
 };
 
-struct InstructionFCall {
+struct _InstructionFCall {
   guint label_number;
 };
 
 struct _Instruction {
   InstructionType	type;
-  union params {
+  union {
     InstructionLabel	p_label;
     InstructionGoto	p_goto;
     InstructionIfNot	p_ifnot;
@@ -164,11 +169,12 @@ struct _Instruction {
     InstructionWrite	p_write;
     InstructionReturn	p_return;
     InstructionReturnV	p_returnv;
+    InstructionCopyRetV p_copyretv;
     InstructionPushReg	p_pushreg;
     InstructionPopReg	p_popreg;
     InstructionPCall	p_pcall;
     InstructionFCall	p_fcall;
-  };
+  } params;
 };
 
 struct _EmitterWriter {
@@ -188,13 +194,18 @@ struct _EmitterWriter {
   void	(*write_write)	(InstructionWrite i);
   void	(*write_return)	(InstructionReturn i);
   void	(*write_returnv)(InstructionReturnV i);
+  void	(*write_copyrv)	(InstructionCopyRetV i);
   void	(*write_pushreg)(InstructionPushReg i);
   void	(*write_popreg)	(InstructionPopReg i);
   void	(*write_pcall)	(InstructionPCall i);
   void	(*write_fcall)	(InstructionFCall i);
+  
+  void	(*write_prolog)	(void);
+  void	(*write_epilog)	(void);
 };
 
 Emitter	*emitter_new();
+void	 emitter_write(Emitter *emitter, EmitterWriter *writer, FILE *output);
 void	 emitter_destroy(Emitter *emitter);
 
 void	 emitter_emit_label(Emitter *emitter, guint number);
@@ -205,14 +216,15 @@ void	 emitter_emit_ldimed(Emitter *emitter, guint reg, guint value);
 void	 emitter_emit_ldreg(Emitter *emitter, guint reg1, guint reg2);
 void	 emitter_emit_alloc(Emitter *emitter, guint bytes);
 void	 emitter_emit_free(Emitter *emitter, guint bytes);
-void	 emitter_emit_binop(Emitter *emitter, guint reg1, gchar *op, guint reg2);
-void	 emitter_emit_unop(Emitter *emitter, gchar *op, guint reg);
+void	 emitter_emit_binop(Emitter *emitter, guint result, guint reg1, const gchar *op, guint reg2);
+void	 emitter_emit_unop(Emitter *emitter, guint result, const gchar *op, guint reg);
 void	 emitter_emit_load(Emitter *emitter, guint reg, guint offset, guint size);
 void	 emitter_emit_store(Emitter *emitter, guint reg, guint offset, guint size);
 void	 emitter_emit_read(Emitter *emitter, guint reg);
 void	 emitter_emit_write(Emitter *emitter, guint reg);
 void	 emitter_emit_return(Emitter *emitter);
 void	 emitter_emit_return_value(Emitter *emitter, guint reg);
+void	 emitter_emit_copy_return_value(Emitter *emitter, guint toreg);
 void	 emitter_emit_pushreg(Emitter *emitter, guint reg);
 void	 emitter_emit_popreg(Emitter *emitter, guint reg);
 void	 emitter_emit_pcall(Emitter *emitter, guint label_number);

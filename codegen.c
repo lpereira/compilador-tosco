@@ -28,6 +28,7 @@
 #include "lex.h"
 #include "ast.h"
 #include "codegen.h"
+#include "codeemitter.h"
 #include "symbol-table.h"
 #include "stack.h"
 
@@ -36,6 +37,7 @@
 static guint __temp_value = 0, __label_value = 0;
 static SymbolTable *symbol_table = NULL;
 static Stack *context = NULL, *var_sizes = NULL;
+static Emitter *emitter = NULL;
 
 /***/
 
@@ -110,7 +112,7 @@ generate_var(GNode *types)
 		}
 	}
 
-	printf("\tmp := mp + %d\n", total_size);
+	emitter_emit_alloc(emitter, total_size);
 	
 	return total_size;
 }
@@ -126,7 +128,7 @@ generate_if(GNode *nodes)
 	l2 = label_new();
 
 	r = generate(nodes->children);
-	printf("\tif_not t%d goto label%d\n", r, l1);
+	emitter_emit_ifnot(emitter, r, l1);
 	temp_unref();
 
 	for (n = nodes->children->next; n; n = n->next) {
@@ -135,8 +137,8 @@ generate_if(GNode *nodes)
 		if (ast_node->token != T_ELSE) {
 			generate(n);
 		} else {
-			printf("\tgoto label%d\n", l2);
-			printf("\nlabel%d:\n", l1);
+			emitter_emit_goto(emitter, l2);
+			emitter_emit_label(emitter, l1);
 			generate_children(n);
 			
 			has_else = TRUE;
@@ -144,9 +146,9 @@ generate_if(GNode *nodes)
 	}
 	
 	if (has_else) {
-		printf("\nlabel%d:\n", l2);
+		emitter_emit_label(emitter, l2);
 	} else {
-		printf("\nlabel%d:\n", l1);
+		emitter_emit_label(emitter, l1);
 	}
 
 	return 0;
@@ -161,17 +163,17 @@ generate_while(GNode *nodes)
 	l1 = label_new();
 	l2 = label_new();
 	
-	printf("\nlabel%d:\n", l1);
+	emitter_emit_label(emitter, l1);
 	r = generate(nodes->children);
-	printf("\tif_not t%d goto label%d\n", r, l2);
+	emitter_emit_ifnot(emitter, r, l2);
 	temp_unref();
 	
 	for (n = nodes->children->next; n; n = n->next) {
 		generate(n);
 	}
 	
-	printf("\tgoto label%d\n", l1);
-	printf("\nlabel%d:\n", l2);
+	emitter_emit_goto(emitter, l1);
+	emitter_emit_label(emitter, l2);
 
 	return 0;
 }
@@ -187,7 +189,7 @@ generate_binop(GNode *node)
 	t1 = generate(node->children);
 	t2 = generate(node->children->next);
 	
-	printf("\tt%d := t%d %s t%d\n", r, t1, literals[ast_node->token], t2);
+	emitter_emit_binop(emitter, r, t1, literals[ast_node->token], t2);
 
 	temp_unref();
 	temp_unref();
@@ -202,8 +204,9 @@ generate_number(GNode *node)
 	guint r;
 	
 	r = temp_new();
-	printf("\tt%d := %s\n", r, (gchar *)ast_node->data);
 	
+	emitter_emit_ldimed(emitter, r, atoi((gchar *)ast_node->data));
+
 	return r;
 }
 
@@ -218,8 +221,9 @@ generate_attrib(GNode *node)
 
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
 	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
+	
+	emitter_emit_store(emitter, r, offset, size);
 
-	printf("\tstore mp-%d, %d, t%d\n", offset, size, r);
 	temp_unref();
 
 	return r;	
@@ -235,8 +239,8 @@ generate_identifier(GNode *node)
 
 	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
 	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
-
-	printf("\tload t%d, mp-%d, %d\n", r, offset, size);
+	
+	emitter_emit_load(emitter, r, offset, size);
 
 	return r;
 }
@@ -245,20 +249,36 @@ static guint
 generate_read(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
+	guint r, offset, size;
+	
+	r = temp_new();
+	emitter_emit_read(emitter, r);
 
-	printf("\tread %s\n", (gchar*) ast_node->data);
+	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
 
-	return 0;
+	emitter_emit_store(emitter, r, offset, size);
+	temp_unref();
+
+	return r;
 }
 
 static guint
 generate_write(GNode *node)
 {
 	ASTNode *ast_node = (ASTNode *)node->data;
+	guint r, offset, size;
+	
+	r = temp_new();
+	symbol_table_get_size_and_offset(symbol_table, (gchar *)ast_node->data, &size, &offset);
+	offset += symbol_table_get_current_offset(symbol_table, (gchar *)ast_node->data);
 
-	printf("\twrite %s\n", (gchar *) ast_node->data);
+	emitter_emit_load(emitter, r, offset, size);
+	emitter_emit_write(emitter, r);
 
-	return 0;
+	temp_unref();
+
+	return r;
 }
 
 static guint
@@ -267,13 +287,13 @@ generate_function_return(GNode *node)
 	guint r, var_size;
 	
 	r = generate(node->children);
-	printf("\ttr := t%d\n", r);
+	emitter_emit_return_value(emitter, r);
 	
 	if ((var_size = GPOINTER_TO_UINT(stack_peek(var_sizes)))) {
-		printf("\tmp := mp - %d\n", var_size);
+		emitter_emit_free(emitter, var_size);
 	}
 	
-	printf("\treturn\n\n");
+	emitter_emit_return(emitter);
 	temp_unref();
 	
 	return 0;
@@ -290,8 +310,8 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	l = label_new();
 	temp_zero();
 	
-	printf("\tgoto label%d\n", l);
-	printf("\n_%d_%s:\n", r, (gchar *)ast_node->data);
+	emitter_emit_goto(emitter, l);
+	emitter_emit_label(emitter, r);
 	
 	symbol_table_install(symbol_table, (gchar *)ast_node->data,
 						 procedure ? ST_PROCEDURE : ST_FUNCTION, SK_NONE);
@@ -318,16 +338,16 @@ generate_procedure_or_function(GNode *node, guint procedure)
 	}
 	
 	if (var_size && ast_node->token != T_FUNCTION_RETURN) {
-		printf("\tmp := mp - %d\n", var_size);
+		emitter_emit_free(emitter, var_size);
 	}
 
 	if (procedure) {
-		printf("\treturn\n\n");
+		emitter_emit_return(emitter);
 	} else {
 		stack_pop(var_sizes);
 	}
-		
-	printf("label%d:\n", l);
+	
+	emitter_emit_label(emitter, l);
 
 	symbol_table_pop_context(symbol_table);
 
@@ -348,7 +368,7 @@ context_save(guint except)
 	stack_push(context, GINT_TO_POINTER(__temp_value));
 	for (i = 1; i <= __temp_value; i++) {
 		if (i != except)
-			printf("\tpush t%d\n", i);
+			emitter_emit_pushreg(emitter, i);
 	}
 }
 
@@ -360,7 +380,7 @@ context_restore(guint except)
 	i = GPOINTER_TO_INT(stack_pop(context));
 	for (; i >= 1; i--) {
 		if (i != except)
-			printf("\tpop t%d\n", i);
+			emitter_emit_popreg(emitter, i);
 	}
 }
 
@@ -373,7 +393,7 @@ generate_procedure_call(GNode *node)
 	label = symbol_table_get_label_number(symbol_table, (gchar *)ast_node->data);
 
 	context_save(-1);
-	printf("\tcall _%d_%s\n", label, (gchar *)ast_node->data);
+	emitter_emit_pcall(emitter, label);
 	context_restore(-1);
 
 	return 0;
@@ -395,10 +415,10 @@ generate_function_call(GNode *node)
 
 	r = temp_new();
 	context_save(r);
-	printf("\tcall _%d_%s\n", label, (gchar *)ast_node->data);
+	emitter_emit_fcall(emitter, label);
 	context_restore(r);
 
-	printf("\tt%d := tr\n", r);
+	emitter_emit_copy_return_value(emitter, r);
 	
 	return r;
 }
@@ -409,7 +429,7 @@ generate_true(GNode *node)
 	guint r;
 	
 	r = temp_new();
-	printf("\tt%d := 1\n", r);
+	emitter_emit_ldimed(emitter, r, 1);
 	
 	return r;
 }
@@ -420,7 +440,7 @@ generate_false(GNode *node)
 	guint r;
 	
 	r = temp_new();
-	printf("\tt%d := 0\n", r);
+	emitter_emit_ldimed(emitter, r, 0);
 	
 	return r;
 }
@@ -431,7 +451,7 @@ generate_not(GNode *node)
 	guint r;
 	
 	r = generate(node->children);
-	printf("\tt%d := not t%d\n", r, r);
+	emitter_emit_unop(emitter, r, "not", r);
 	
 	return r;
 }
@@ -442,7 +462,7 @@ generate_uminus(GNode *node)
 	guint r;
 	
 	r = generate(node->children);
-	printf("\tt%d := neg t%d\n", r, r);
+	emitter_emit_unop(emitter, r, "neg", r);
 	
 	return r;
 }
@@ -529,10 +549,12 @@ generate(GNode *node)
 	return r;
 }
 
-void
+Emitter *
 codegen(GNode *root)
 {
 	__temp_value = __label_value = 0;
+	
+	emitter = emitter_new();
 	symbol_table = symbol_table_new();
 	context = stack_new();
 	var_sizes = stack_new();
@@ -542,6 +564,8 @@ codegen(GNode *root)
 	symbol_table_free(symbol_table);
 	stack_free(context);
 	stack_free(var_sizes);
+	
+	return emitter;
 }
 
 int

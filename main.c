@@ -89,6 +89,7 @@ main(int argc, char **argv)
 {
 	GNode          *root;
 	TokenList      *token_list;
+	Emitter	       *emitter;
 	struct timeval	tv_start, tv_lex, tv_ast, tv_codegen, tv_opt1, tv_opt2;
 	gdouble		time_lex, time_ast, time_codegen, time_total, time_opt1, time_opt2;
 	gdouble		p_lex, p_ast, p_codegen, p_total, p_opt1, p_opt2;
@@ -138,7 +139,7 @@ main(int argc, char **argv)
 		gettimeofday(&tv_opt1, NULL);
 	}
 
-	codegen(root);
+	emitter = codegen(root);
 	gettimeofday(&tv_codegen, NULL);
 	
 	if (params.optimization_level & 2) {
