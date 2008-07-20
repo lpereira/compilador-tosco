@@ -4,6 +4,8 @@
 #include <glib.h>
 
 typedef struct _Emitter			Emitter;
+typedef struct _EmitterWriter		EmitterWriter;
+
 typedef struct _Instruction		Instruction;
 
 typedef struct _InstructionLabel	InstructionLabel;
@@ -52,6 +54,7 @@ typedef enum {
 
 struct _Emitter {
   GList	*code;
+  EmitterWriter *writer;
 };
 
 struct InstructionLabel {
@@ -168,28 +171,51 @@ struct _Instruction {
   };
 };
 
-Emitter		*emitter_new();
-void		 emitter_destroy(Emitter *emitter);
+struct _EmitterWriter {
+  void	(*write_label)	(InstructionLabel i);
+  void	(*write_goto)	(InstructionGoto i);
+  void	(*write_ifnot)	(InstructionIfNot i);
+  void	(*write_if)	(InstructionIf i);
+  void	(*write_ldimed)	(InstructionLdImed i);
+  void	(*write_ldreg)	(InstructionLdReg i);
+  void	(*write_alloc)	(InstructionAlloc i);
+  void	(*write_free)	(InstructionFree i);
+  void	(*write_binop)	(InstructionBinOp i);
+  void	(*write_unop)	(InstructionUnOp i);
+  void	(*write_load)	(InstructionLoad i);
+  void	(*write_store)	(InstructionStore i);
+  void	(*write_read)	(InstructionRead i);
+  void	(*write_write)	(InstructionWrite i);
+  void	(*write_return)	(InstructionReturn i);
+  void	(*write_returnv)(InstructionReturnV i);
+  void	(*write_pushreg)(InstructionPushReg i);
+  void	(*write_popreg)	(InstructionPopReg i);
+  void	(*write_pcall)	(InstructionPCall i);
+  void	(*write_fcall)	(InstructionFCall i);
+};
 
-void		 emitter_emit_label(Emitter *emitter, guint number);
-void		 emitter_emit_goto(Emitter *emitter, guint label_number);
-void		 emitter_emit_ifnot(Emitter *emitter, guint reg, guint label);
-void		 emitter_emit_if(Emitter *emitter, guint reg, guint label);
-void		 emitter_emit_ldimed(Emitter *emitter, guint reg, guint value);
-void		 emitter_emit_ldreg(Emitter *emitter, guint reg1, guint reg2);
-void		 emitter_emit_alloc(Emitter *emitter, guint bytes);
-void		 emitter_emit_free(Emitter *emitter, guint bytes);
-void		 emitter_emit_binop(Emitter *emitter, guint reg1, gchar *op, guint reg2);
-void		 emitter_emit_unop(Emitter *emitter, gchar *op, guint reg);
-void		 emitter_emit_load(Emitter *emitter, guint reg, guint offset, guint size);
-void		 emitter_emit_store(Emitter *emitter, guint reg, guint offset, guint size);
-void		 emitter_emit_read(Emitter *emitter, guint reg);
-void		 emitter_emit_write(Emitter *emitter, guint reg);
-void		 emitter_emit_return(Emitter *emitter);
-void		 emitter_emit_return_value(Emitter *emitter, guint reg);
-void		 emitter_emit_pushreg(Emitter *emitter, guint reg);
-void		 emitter_emit_popreg(Emitter *emitter, guint reg);
-void		 emitter_emit_pcall(Emitter *emitter, guint label_number);
-void		 emitter_emit_fcall(Emitter *emitter, guint label_number);
+Emitter	*emitter_new();
+void	 emitter_destroy(Emitter *emitter);
+
+void	 emitter_emit_label(Emitter *emitter, guint number);
+void	 emitter_emit_goto(Emitter *emitter, guint label_number);
+void	 emitter_emit_ifnot(Emitter *emitter, guint reg, guint label);
+void	 emitter_emit_if(Emitter *emitter, guint reg, guint label);
+void	 emitter_emit_ldimed(Emitter *emitter, guint reg, guint value);
+void	 emitter_emit_ldreg(Emitter *emitter, guint reg1, guint reg2);
+void	 emitter_emit_alloc(Emitter *emitter, guint bytes);
+void	 emitter_emit_free(Emitter *emitter, guint bytes);
+void	 emitter_emit_binop(Emitter *emitter, guint reg1, gchar *op, guint reg2);
+void	 emitter_emit_unop(Emitter *emitter, gchar *op, guint reg);
+void	 emitter_emit_load(Emitter *emitter, guint reg, guint offset, guint size);
+void	 emitter_emit_store(Emitter *emitter, guint reg, guint offset, guint size);
+void	 emitter_emit_read(Emitter *emitter, guint reg);
+void	 emitter_emit_write(Emitter *emitter, guint reg);
+void	 emitter_emit_return(Emitter *emitter);
+void	 emitter_emit_return_value(Emitter *emitter, guint reg);
+void	 emitter_emit_pushreg(Emitter *emitter, guint reg);
+void	 emitter_emit_popreg(Emitter *emitter, guint reg);
+void	 emitter_emit_pcall(Emitter *emitter, guint label_number);
+void	 emitter_emit_fcall(Emitter *emitter, guint label_number);
 
 #endif /* __CODEEMITTER_H__ */

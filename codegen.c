@@ -14,7 +14,6 @@
  *    the final code later -- include the generated code in a list,
  *    and use sane structures
  *  - temp_new/temp_unref. is this sane?
- *  - unary operations are not supported (support must come right from the lex)
  *  - free global variables memory
  *  - mp will not work on recursive functions!
  */
