@@ -15,15 +15,16 @@ c_prolog(FILE *output)
                   "\n"
                   "int main(int argc, char **argv) {\n"
                   "    unsigned char mem[65536];\n"
-                  "    short t[256], tr, csp = 0, stack[256], sp = 0;\n"
+                  "    short t[256], tr, csp = -1, stack[256], sp = -1;\n"
                   "    jmp_buf callstack[256];\n"
-                  "    unsigned int mp = 0;\n\n");
+                  "    unsigned char *mp = mem;\n\n");
 }
 
 static void
 c_epilog(FILE *output)
 {
-  fprintf(output, "    return 0;\n"
+  fprintf(output, "\n"
+                  "    return 0;\n"
                   "}\n");
 }
 
@@ -42,13 +43,15 @@ c_goto(InstructionGoto *i, FILE *output)
 static void
 c_ifnot(InstructionIfNot *i, FILE *output)
 {
-  fprintf(output, "    if (!t[%d]) goto label%d;\n", i->reg, i->label);
+  fprintf(output, "    if (!t[%d])\n", i->reg);
+  fprintf(output, "        goto label%d;\n", i->label);
 }
 
 static void
 c_if(InstructionIf *i, FILE *output)
 {
-  fprintf(output, "    if (t[%d]) goto label%d;\n", i->reg, i->label);
+  fprintf(output, "    if (t[%d])\n", i->reg);
+  fprintf(output, "        goto label%d;\n", i->label);
 }
 
 static void
@@ -108,14 +111,14 @@ c_unop(InstructionUnOp *i, FILE *output)
 static void
 c_load(InstructionLoad *i, FILE *output)
 {
-  fprintf(output, "    memcpy(t + %d, mem + mp - %d, %d);\n",
+  fprintf(output, "    memcpy(t + %d, mp - %d, %d);\n",
           i->reg, i->offset, i->size);
 }
 
 static void
 c_store(InstructionStore *i, FILE *output)
 {
-  fprintf(output, "    memcpy(mem + mp - %d, t + %d, %d);\n",
+  fprintf(output, "    memcpy(mp - %d, t + %d, %d);\n",
           i->offset, i->reg, i->size);
 }
 

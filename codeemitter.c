@@ -5,6 +5,7 @@
  * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
  */
 
+#include <unistd.h>
 #include <string.h>
 
 #include "codeemitter.h"
@@ -23,6 +24,12 @@ emitter_new()
 void
 emitter_free(Emitter * emitter)
 {
+	GList *l;
+	
+	for (l = emitter->code; l; l = l->next) {
+		g_free((Instruction *)l->data);
+	}
+	
 	g_list_free(emitter->code);
 	g_free(emitter);
 }
@@ -114,6 +121,9 @@ emitter_write(Emitter * emitter,
 	}
 
 	writer->write_epilog(output);
+
+	fflush(output);
+	fsync(fileno(output));
 }
 
 static void
