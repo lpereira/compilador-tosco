@@ -10,10 +10,6 @@
  *  - must add a jump to the "main program" right after global variable
  *    declaration (we currently do a jump to a label, which jumps ahead until
  *    we find the main program; this works but is kludgy)
- *  - we're printing out the code; this isn't a good idea to generate
- *    the final code later -- include the generated code in a list,
- *    and use sane structures
- *  - temp_new/temp_unref. is this sane?
  *  - free global variables memory
  *  - mp will not work on recursive functions!
  */
