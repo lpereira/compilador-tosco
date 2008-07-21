@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * TAC Writer
+ *
+ * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #include "writer-tac.h"
 
 static void

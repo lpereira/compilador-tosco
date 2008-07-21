@@ -1,3 +1,9 @@
+/*
+ * Simple Pascal Compiler
+ * LLVM Writer
+ *
+ * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
 #include "writer-llvm.h"
 
 EmitterWriter *

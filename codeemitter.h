@@ -1,3 +1,10 @@
+/*
+ * Simple Pascal Compiler
+ * Code Emitter / Writer
+ *
+ * Copyright (c) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+ */
+
 #ifndef __CODEEMITTER_H__
 #define __CODEEMITTER_H__
 
