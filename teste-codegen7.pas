@@ -18,7 +18,7 @@ begin
 end;
 
 begin
-  variavel1 := 0;
+  variavel1 := 20909;
   variavel2 := 5;
   variavel3 := 1;
   variavel4 := true;
