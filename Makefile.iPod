@@ -1,0 +1,18 @@
+CC=gcc
+CFLAGS = -g -O0 -Werror -Wall -pipe -I/usr/include/glib-2.0  -I/var/include -I/usr/lib/glib-2.0/include/
+LIBS = /usr/lib/libglib-2.0.dylib
+
+OBJECTS = stack.o symbol-table.o lex.o ast.o codegen.o charbuf.o \
+		tokenlist.o optimization-l1.o optimization-l2.o \
+		codeemitter.o \
+		writer-c.o writer-tac.o writer-risclie.o writer-llvm.o \
+		main.o
+
+all:	$(OBJECTS)
+	$(CC) $(CFLAGS) -o compiler $(OBJECTS) $(LIBS)
+	ldid -S compiler
+
+clean:
+	rm -f *.o *~
+	rm -f compiler
+
