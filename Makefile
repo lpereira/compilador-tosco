@@ -3,7 +3,7 @@ LIBS = `pkg-config glib-2.0 --libs`
 OBJECTS = stack.o symbol-table.o lex.o ast.o codegen.o charbuf.o \
 		tokenlist.o optimization-l1.o optimization-l2.o \
 		codeemitter.o \
-		writer-c.o writer-tac.o writer-risclie.o writer-llvm.o \
+		writer-c.o writer-tac.o writer-risclie.o writer-llvm.o writer-stack.o \
 		main.o
 
 all:	$(OBJECTS)
