@@ -25,8 +25,6 @@
 #include "optimization-l2.h"
 
 #include "writer-tac.h"
-#include "writer-risclie.h"
-#include "writer-llvm.h"
 #include "writer-c.h"
 #include "writer-stack.h"
 
@@ -79,7 +77,7 @@ static GOptionEntry cmdline_options[] = {
 		.short_name = 'f',
 		.arg = G_OPTION_ARG_STRING,
 		.arg_data = &params.output_format,
-		.description = "Specify the output format (tac/risclie/llvm/c)"
+		.description = "Specify the output format (tac/stack/c)"
 	},
 	{
 		.long_name = "show-time",
@@ -136,12 +134,8 @@ main(int argc, char **argv)
 	
 	if (!params.output_format || g_str_equal(params.output_format, "tac")) {
 		writer = writer_tac_get_emitter();
-	} else if (g_str_equal(params.output_format, "llvm")) {
-		writer = writer_llvm_get_emitter();
 	} else if (g_str_equal(params.output_format, "stack")) {
 		writer = writer_stack_get_emitter();
-	} else if (g_str_equal(params.output_format, "risclie")) {
-		writer = writer_risclie_get_emitter();
 	} else if (g_str_equal(params.output_format, "c")) {
 		writer = writer_c_get_emitter();
 	} else {
