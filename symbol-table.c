@@ -213,7 +213,7 @@ symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name)
 
 	/* it's not on the current context; sum up the sizes for all previously
 	   declared variables to obtain our offset */
-	for (list = list->next; list->next; list = list->next) {
+	for (; list->next; list = list->next) {
 		g_hash_table_foreach((GHashTable *)list->data,
 				     (GHFunc)__update_offset_fn,
 				     (gpointer) &offset);
