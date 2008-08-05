@@ -205,7 +205,7 @@ symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name)
 	STEntry *entry;
 
 	list = st->table;
-
+	
 	/* the variable is in the current context: the offset is zero */
 	if ((entry = g_hash_table_lookup((GHashTable *)list->data, symbol_name))) {
 		return 0;
@@ -213,21 +213,13 @@ symbol_table_get_current_offset(SymbolTable *st, gchar *symbol_name)
 
 	/* it's not on the current context; sum up the sizes for all previously
 	   declared variables to obtain our offset */
-	if ((entry = __symbol_table_get_symbol_entry(st, symbol_name, -1))) {
-		if (list->next) {
-			list = list->next;
-		} else {
-			return 0;
-		}
-
-		for (; list; list = list->next) {
-			g_hash_table_foreach((GHashTable *)list->data, (GHFunc)__update_offset_fn, (gpointer) &offset);
-		}
-
-		return offset;
+	for (list = list->next; list->next; list = list->next) {
+		g_hash_table_foreach((GHashTable *)list->data,
+				     (GHFunc)__update_offset_fn,
+				     (gpointer) &offset);
 	}
 	
-	return 0;
+	return offset;
 }
 
 void
