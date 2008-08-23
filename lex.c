@@ -31,6 +31,18 @@ const char     *literals[] = {
 	"return", "function call", "procedure call", "-"
 };
 
+const char     *literals_lpd[] = {
+	"(nil)", "literal", ",", "e", ":=", "booleano", ")",
+	":", "div", "faca", "senao", "falso", "fim",
+	"funcao", "se", "inicio", "inteiro", "-",
+	"*", "nao", "<>", "(", "=", ">",
+	">=", "<", "<=", "ou", ".", "+",
+	"procedimento", "programa", "leia", ";", "entao",
+	"verdadeiro", "var", "enquanto", "escreva",
+	"id", "numero",
+	"retorno", "cham. funcao", "cham. procedimento", "-"
+};
+
 static int      line = 1, column = 1;
 
 static TokenList *match_program(void);
@@ -686,24 +698,14 @@ static TokenList      *
 match_expression(void)
 {
 	TokenList      *tl, *t;
-	gboolean	started_with_paren = FALSE;
 
 	tl = tl_new();
-	
-	if ((t = match_token(T_OPENPAREN))) {
-		tl_add_token(&tl, t);
-		started_with_paren = TRUE;
-	}
 	
 	tl_add_token(&tl, match_simple_expression_req());
 
 	if ((t = match_relational_op())) {
 		tl_add_token(&tl, t);
 		tl_add_token(&tl, match_simple_expression_req());
-	}
-	
-	if (started_with_paren) {
-		tl_add_token(&tl, match_token_req(T_CLOSEPAREN));
 	}
 	
 	return tl;
