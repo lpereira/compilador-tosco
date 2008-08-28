@@ -11,6 +11,8 @@
 #include "charbuf.h"
 #include "tokenlist.h"
 
+#undef LPD		/* define to enable processing of LPD */
+
 extern const char *literals[];
 
 TokenList *lex(void);

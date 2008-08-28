@@ -19,6 +19,7 @@
 
 #include "lex.h"
 
+#ifndef LPD
 const char     *literals[] = {
 	"(nil)", "literal", ",", "and", ":=", "boolean", ")",
 	":", "/", "do", "else", "false", "end",
@@ -30,8 +31,8 @@ const char     *literals[] = {
 	"id", "number",
 	"return", "function call", "procedure call", "-"
 };
-
-const char     *literals_lpd[] = {
+#else
+const char     *literals[] = {
 	"(nil)", "literal", ",", "e", ":=", "booleano", ")",
 	":", "div", "faca", "senao", "falso", "fim",
 	"funcao", "se", "inicio", "inteiro", "-",
@@ -42,6 +43,7 @@ const char     *literals_lpd[] = {
 	"id", "numero",
 	"retorno", "cham. funcao", "cham. procedimento", "-"
 };
+#endif
 
 static int      line = 1, column = 1;
 
