@@ -7,8 +7,8 @@ all:
 	@make mvd
 
 pixmaps:
-	gdk-pixbuf-csource --raw --name=arrow arrow.png > arrow.h
-	gdk-pixbuf-csource --raw --name=gear gear.png > gear.h
+	gdk-pixbuf-csource --rle --name=arrow arrow.png > arrow.h
+	gdk-pixbuf-csource --rle --name=gear gear.png > gear.h
 
 mvd_glade.o:
 	./blob-to-object mvd.glade
