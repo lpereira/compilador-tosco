@@ -1,0 +1,37 @@
+    START           
+    ALLOC   0   2   
+    JMP     WTF
+L2  NULL            
+    ALLOC   2   1   
+    LDV     0       
+    STR     2       
+    LDV     0       
+    LDC     1       
+    SUB             
+    STR     0       
+    LDV     2       
+    LDC     1       
+    CMA             
+    JMPF    L3      
+    CALL    L2      
+    JMP     L4      
+L3  NULL            
+    LDC     1       
+    STR     1       
+L4  NULL            
+    LDV     1       
+    LDV     2       
+    MULT            
+    STR     1       
+    DALLOC  2    1    
+    RETURN          
+WTF NULL            
+    RD              
+    STR     0       
+    CALL    L2      
+    LDV     0       
+    PRN             
+    LDV     1       
+    PRN             
+    DALLOC  0   2   
+    HLT             

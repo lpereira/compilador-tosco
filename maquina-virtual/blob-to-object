@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# blob-to-object
+# Author:  Leandro A. F. Pereira
+# Version: 1.0
+#
+# Converts a binary blob to a ELF object; useful to include data inside
+# programs (and not require external files).
+#
+# Usage: blob-to-object filename.ext
+#
+# The script will then create a header file (filename_ext.h) and a object
+# file (filename_ext.o). The binary blob will have filename_ext as its
+# name, and the header file will include the file size on its extern
+# declaration -- so sizeof(filename_ext) will give the blob size.
+#
+# Additionally, the script also appends a NUL character after the blob, so
+# functions that expects a C-style string will work.
+#
+# Script based on comment by Zack Weinberg at:
+# http://www.burtonini.com/blog/computers/ld-blobs-2007-07-13-15-50
+#
+#
+
+INPUT=$1
+
+if [ "x$INPUT" == "x" ]; then
+       echo "Usage: $0 filename"
+       exit 1
+fi
+
+INPUT_ID=$(echo $INPUT | sed 's/[\.\-]/_/g')
+OUTPUT_OBJ=${INPUT_ID}.o
+OUTPUT_HDR=${INPUT_ID}.h
+TEMP=$(mktemp embedXXXXXXXXX)
+TEMP_S=${TEMP}.s
+SIZE=$(wc -c ${INPUT}|cut -d" " -f1)
+
+cat << EOF > $TEMP_S
+       .section ".rodata"
+       .globl ${INPUT_ID}
+       .type ${INPUT_ID}, @object
+${INPUT_ID}:
+       .incbin "${INPUT}"
+       .byte 0
+       .size ${INPUT_ID},.-${INPUT_ID}
+EOF
+
+cat << EOF > $OUTPUT_HDR
+#ifndef __${INPUT_ID}_h__
+#define __${INPUT_ID}_h__
+
+extern char ${INPUT_ID}[${SIZE}];
+
+#endif /* __${INPUT_ID}_h__ */
+EOF
+
+as $TEMP_S -o $OUTPUT_OBJ
+rm -f $TEMP $TEMP_S

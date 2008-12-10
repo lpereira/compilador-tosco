@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+ Author: Leandro A. F. Pereira <leandro@hardinfo.org>
+ Copyright (C) 2004 Andrew Johnson <acjgenius@earthlink.net>
+ Copyright (C) 2005 Thierry Moisan <thierryn@videotron.ca>
+ Copyright (C) 2008 Leandro A. F. Pereira <leandro@hardinfo.org>
+
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+-->
+<language id="lpd" _name="LPD" version="2.0" _section="Sources">
+  <metadata>
+    <property name="mimetypes">text/x-lpd</property>
+    <property name="globs">*.lpd</property>
+  </metadata>
+
+  <styles>
+    <style id="comment" _name="Comment" map-to="def:comment"/>
+    <style id="string" _name="String" map-to="def:string"/>
+    <style id="keyword" _name="Keyword" map-to="def:keyword"/>
+    <style id="decimal" _name="Decimal" map-to="def:decimal"/>
+    <style id="type" _name="Data Type" map-to="def:type"/>
+    <style id="preprocessor" _name="Preprocessor" map-to="def:preprocessor"/>
+  </styles>
+
+  <default-regex-options case-sensitive="false"/>
+
+  <definitions>
+    <context id="line-comment" style-ref="comment" end-at-line-end="true">
+      <start>//</start>
+      <include>
+        <context ref="def:in-comment"/>
+      </include>
+    </context>
+
+    <context id="block-comment-2" style-ref="comment">
+      <start>\{</start>
+      <end>\}</end>
+      <include>
+        <context ref="def:in-comment"/>
+      </include>
+    </context>
+
+    <context id="general-format" style-ref="keyword">
+      <keyword>programa</keyword>
+      <keyword>inicio</keyword>
+      <keyword>fim</keyword>
+      <keyword>var</keyword>
+    </context>
+
+    <context id="functions-and-function-modifiers" style-ref="keyword">
+      <keyword>funcao</keyword>
+      <keyword>procedimento</keyword>
+    </context>
+
+    <context id="boolean-bitwise-operators" style-ref="keyword">
+      <keyword>se</keyword>
+      <keyword>entao</keyword>
+      <keyword>senao</keyword>
+      <keyword>e</keyword>
+      <keyword>nao</keyword>
+      <keyword>ou</keyword>
+    </context>
+
+    <context id="math-operators" style-ref="keyword">
+      <keyword>div</keyword>
+      <!-- keyword>mod</keyword -->
+    </context>
+
+    <context id="loop-flow-and-exceptions-keywords" style-ref="keyword">
+      <keyword>enquanto</keyword>
+      <keyword>faca</keyword>
+      <keyword>para</keyword>
+      <keyword>ate</keyword>
+      <keyword>passo</keyword>
+      <keyword>repita</keyword>
+    </context>
+
+    <context id="type-class-and-object-keywords" style-ref="keyword">
+      <keyword>leia</keyword>
+      <keyword>escreva</keyword>
+    </context>
+
+    <context id="builtin-types" style-ref="type">
+      <keyword>inteiro</keyword>
+      <keyword>booleano</keyword>
+    </context>
+
+    <context id="builtin-values" style-ref="keyword">
+      <keyword>verdadeiro</keyword>
+      <keyword>falso</keyword>
+    </context>
+
+    <context id="number" style-ref="decimal">
+      <match extended="true">
+        (?&lt;![\w\.])
+        (([0-9]+)|([0-9]+\.[0-9]+([Ee][-]?[0-9]+)?))
+        (?![\w\.])
+      </match>
+    </context>
+
+    <context id="lpd">
+      <include>
+        <context ref="block-comment-2"/>
+        <context ref="general-format"/>
+        <context ref="functions-and-function-modifiers"/>
+        <context ref="boolean-bitwise-operators"/>
+        <context ref="math-operators"/>
+        <context ref="loop-flow-and-exceptions-keywords"/>
+        <context ref="type-class-and-object-keywords"/>
+        <context ref="builtin-types"/>
+        <context ref="builtin-values"/>
+        <context ref="number"/>
+        <context ref="line-comment"/>
+      </include>
+    </context>
+
+  </definitions>
+</language>
